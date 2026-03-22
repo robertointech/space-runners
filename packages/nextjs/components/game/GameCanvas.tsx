@@ -865,22 +865,7 @@ export const GameCanvas = ({
       ctx.fillStyle = i < g.lives ? "#ff3366" : "#333355";
       drawHeart(ctx, w - 24 - i * heartSp, 24, Math.min(10, w * 0.015));
     }
-    // Founder distance - simple and correct
-    const lvl = LEVELS[g.currentLevel];
-    const playerXhud = w * PLAYER_X_RATIO;
-    let remaining: number;
-    if (g.founderSpawned && g.founderX < w + 100) {
-      // Founder visible or near screen: use pixel distance
-      const pixDist = g.founderX - playerXhud;
-      remaining = pixDist > 0 ? Math.max(1, Math.round(pixDist / 6)) : 0;
-    } else {
-      // Use pre-computed total distance minus distance traveled
-      remaining = Math.max(1, Math.round(g.founderTotalDist - g.levelDist));
-    }
-    ctx.textAlign = "right";
-    ctx.fillStyle = remaining < 50 ? "#fc0" : "#8899bb";
-    ctx.font = `bold ${hf(12)}px monospace`;
-    ctx.fillText(`${lvl.founder.split(" ")[0]}: ${remaining}m`, w - 20, 62);
+    // Wallet address
     const p = propsRef.current;
     if (p.walletAddress) {
       ctx.fillStyle = "#556688";
@@ -888,26 +873,6 @@ export const GameCanvas = ({
       ctx.textAlign = "left";
       ctx.fillText(p.walletAddress.slice(0, 6) + "..." + p.walletAddress.slice(-4), 10, h - 48);
     }
-    // Race position bar (right side)
-    const barX = w - 14,
-      barTop = 80,
-      barH = h - 160;
-    ctx.fillStyle = "#111133";
-    ctx.fillRect(barX - 3, barTop, 6, barH);
-    // Player dot (progress based on founderTotalDist, not targetDist)
-    const progressBase = g.founderTotalDist > 0 ? g.founderTotalDist : lvl.targetDist;
-    const pProg = Math.min(1, g.levelDist / progressBase);
-    ctx.fillStyle = "#00d4ff";
-    ctx.fillRect(barX - 5, barTop + barH * (1 - pProg) - 3, 10, 6);
-    // Bot dots
-    for (const bot of g.bots) {
-      const bProg = Math.min(1, bot.distance / progressBase);
-      ctx.fillStyle = bot.color;
-      ctx.fillRect(barX - 3, barTop + barH * (1 - bProg) - 2, 6, 4);
-    }
-    // Finish line
-    ctx.fillStyle = "#fc0";
-    ctx.fillRect(barX - 6, barTop - 2, 12, 2);
     ctx.restore();
   };
 
@@ -1726,7 +1691,7 @@ export const GameCanvas = ({
       if (g.allQDone && !g.founderSpawned) {
         g.founderSpawned = true;
         g.founderSpawnDist = g.levelDist + 20;
-        g.founderX = playerX + 20 * 6; // 20 meters * 6 px/m = 120px ahead of player
+        g.founderX = w + 100; // spawn off-screen right, scrolls in like obstacles
         g.founderY = h * 0.3 + Math.random() * h * 0.3;
       }
       // Debug log every 120 frames
