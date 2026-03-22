@@ -153,17 +153,15 @@ const QUESTIONS: TFQuestion[] = [
   { q: "The Ethereum merge switched to Proof of Stake", answer: true },
 ];
 
-// ── Audio Manager (all browser APIs guarded) ───────────
+// ── Audio Manager (strict single-track, no overlapping) ─
 class AudioManager {
   private sounds: Record<string, HTMLAudioElement | null> = {};
   private loaded = false;
   private started = false;
   private currentTrack: string | null = null;
-  private fadeTimer: ReturnType<typeof setInterval> | null = null;
 
   load() {
-    if (typeof window === "undefined") return;
-    if (this.loaded) return;
+    if (typeof window === "undefined" || this.loaded) return;
     this.loaded = true;
     try {
       const files: Record<string, { src: string; loop: boolean; vol: number }> = {
@@ -172,9 +170,7 @@ class AudioManager {
         gameover: { src: "/audio/gameover.mp3", loop: false, vol: 0.5 },
         winner: { src: "/audio/winner.mp3", loop: false, vol: 0.5 },
         sfx_coin: { src: "/audio/money.mp3", loop: false, vol: 0.5 },
-        sfx_correct: { src: "/audio/money.mp3", loop: false, vol: 0.5 },
         sfx_wrong: { src: "/audio/death.mp3", loop: false, vol: 0.5 },
-        sfx_victory: { src: "/audio/money.mp3", loop: false, vol: 0.7 },
       };
       for (const [key, cfg] of Object.entries(files)) {
         try {
@@ -187,81 +183,40 @@ class AudioManager {
           this.sounds[key] = null;
         }
       }
-      console.log("[Audio] Loaded", Object.keys(this.sounds).join(", "));
-    } catch (e) {
-      console.warn("[Audio] Load failed:", e);
-    }
+    } catch {}
   }
 
   userStart() {
-    if (typeof window === "undefined") return;
-    if (this.started) return;
+    if (typeof window === "undefined" || this.started) return;
     this.started = true;
-    console.log("[Audio] User gesture received, unlocking audio");
     try {
       const AC =
         window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AC) {
         const ac = new AC();
-        const buf = ac.createBuffer(1, 1, 22050);
-        const src = ac.createBufferSource();
-        src.buffer = buf;
-        src.connect(ac.destination);
-        src.start(0);
         ac.resume().catch(() => {});
       }
-    } catch (e) {
-      console.warn("[Audio] Unlock failed:", e);
-    }
+    } catch {}
   }
 
+  // Play a music track. ALWAYS stops everything first. Only one track at a time.
   playTrack(name: string) {
     if (typeof window === "undefined") return;
-    console.log(`[Audio] playTrack: ${name} (current: ${this.currentTrack})`);
-    if (name === this.currentTrack) return;
-    if (this.fadeTimer) {
-      clearInterval(this.fadeTimer);
-      this.fadeTimer = null;
-    }
-    const prev = this.currentTrack ? this.sounds[this.currentTrack] : null;
-    const next = this.sounds[name];
-    if (prev) {
-      try {
-        let vol = prev.volume;
-        this.fadeTimer = setInterval(() => {
-          vol -= 0.03;
-          if (vol <= 0) {
-            try {
-              prev.pause();
-              prev.currentTime = 0;
-              prev.volume = 0.3;
-            } catch {}
-            if (this.fadeTimer) clearInterval(this.fadeTimer);
-            this.fadeTimer = null;
-          } else {
-            try {
-              prev.volume = vol;
-            } catch {}
-          }
-        }, 30);
-      } catch {}
-    }
+    if (name === this.currentTrack) return; // already playing
+    this.stopAll(); // STOP everything before playing new track
     this.currentTrack = name;
-    if (next) {
+    const s = this.sounds[name];
+    if (s) {
       try {
-        next.currentTime = 0;
-        next.volume = 0.3;
-        next.play().catch(() => {});
+        s.currentTime = 0;
+        s.volume = 0.3;
+        s.play().catch(() => {});
       } catch {}
     }
   }
 
   stopAll() {
     if (typeof window === "undefined") return;
-    if (this.fadeTimer) {
-      clearInterval(this.fadeTimer);
-      this.fadeTimer = null;
-    }
     for (const s of Object.values(this.sounds)) {
       if (s) {
         try {
@@ -883,25 +838,27 @@ export const GameCanvas = ({
       ctx.fillStyle = i < g.lives ? "#ff3366" : "#333355";
       drawHeart(ctx, w - 30 - i * 28, 28, 10);
     }
-    // Founder distance
+    // Founder distance - pixel-based when visible, estimated before
     const lvl = LEVELS[g.currentLevel];
+    const playerX = w * PLAYER_X_RATIO;
+    const PIXELS_PER_METER = 6; // conversion factor
     let remaining: number;
-    if (g.founderSpawned) {
-      // Founder is spawned: show distance to where founder actually is
-      // founderX is screen position; convert back: founder is at founderSpawnDist in level distance
-      // But founderSpawnDist is when it was spawned, and it scrolls from there
-      // The player reaches the founder when playerX >= founderX, which happens ~when levelDist reaches founderSpawnDist
-      remaining = Math.max(0, Math.floor(g.founderSpawnDist - g.levelDist));
+    if (g.founderSpawned && g.founderX < w + 60) {
+      // Founder is on screen or nearby: use REAL pixel distance
+      remaining = Math.max(0, Math.round((g.founderX - playerX) / PIXELS_PER_METER));
+    } else if (g.founderSpawned) {
+      // Spawned but still off-screen right
+      remaining = Math.max(1, Math.floor(g.founderSpawnDist - g.levelDist));
     } else {
-      // Estimate: questions are spaced across targetDist, founder is 20m after last question
+      // Not spawned yet: estimate based on question spacing
       const qPerLvl = [1, 2, 3, 4, 5];
       const nq = qPerLvl[g.currentLevel] || 3;
-      const lastQDist = (lvl.targetDist * nq) / (nq + 1); // approximate distance of last question
+      const lastQDist = (lvl.targetDist * nq) / (nq + 1);
       const estFounderDist = lastQDist + 20;
-      remaining = Math.max(0, Math.floor(estFounderDist - g.levelDist));
+      remaining = Math.max(1, Math.floor(estFounderDist - g.levelDist));
     }
     ctx.textAlign = "right";
-    ctx.fillStyle = remaining < 100 ? "#fc0" : "#8899bb";
+    ctx.fillStyle = remaining < 50 ? "#fc0" : "#8899bb";
     ctx.font = "bold 14px monospace";
     ctx.fillText(`${lvl.founder}: ${remaining}m`, w - 20, 68);
     // Wallet
@@ -1021,36 +978,97 @@ export const GameCanvas = ({
   // Level complete button hit areas
   const lvlCompleteBtns = useRef({ home: { x: 0, y: 0, w: 0, h: 0 } });
 
+  // Draw a large founder character (pixel art, 60x60)
+  const drawFounderBig = (ctx: CanvasRenderingContext2D, x: number, y: number, name: string) => {
+    const s = 3;
+    // Head (skin)
+    ctx.fillStyle = "#e8b888";
+    ctx.fillRect(x + 12, y, s * 8, s * 6);
+    // Hair
+    ctx.fillStyle = "#332211";
+    ctx.fillRect(x + 12, y - 2, s * 8, s * 2);
+    ctx.fillRect(x + 10, y, s * 2, s * 3);
+    // Eyes
+    ctx.fillStyle = "#222";
+    ctx.fillRect(x + 16, y + s * 2, s, s);
+    ctx.fillRect(x + 24, y + s * 2, s, s);
+    // Smile
+    ctx.fillStyle = "#aa5533";
+    ctx.fillRect(x + 18, y + s * 4, s * 3, 2);
+    // Body (white shirt)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x + 8, y + s * 6, s * 10, s * 7);
+    // Suit jacket
+    ctx.fillStyle = "#334466";
+    ctx.fillRect(x + 6, y + s * 6, s * 2, s * 7);
+    ctx.fillRect(x + 8 + s * 8, y + s * 6, s * 2, s * 7);
+    // Arms
+    ctx.fillStyle = "#334466";
+    ctx.fillRect(x + 2, y + s * 7, s * 2, s * 5);
+    ctx.fillRect(x + 8 + s * 10, y + s * 7, s * 2, s * 5);
+    // Legs
+    ctx.fillStyle = "#222233";
+    ctx.fillRect(x + 12, y + s * 13, s * 3, s * 4);
+    ctx.fillRect(x + 20, y + s * 13, s * 3, s * 4);
+    // Name label
+    ctx.fillStyle = "#fc0";
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x + 20, y - 10);
+  };
+
+  // Celebration particles
+  const drawCelebration = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    const t = Date.now();
+    for (let i = 0; i < 20; i++) {
+      const seed = i * 137.5;
+      const x = (seed * 7.3 + t * 0.02) % w;
+      const y = (seed * 13.1 + t * 0.03) % h;
+      const colors = ["#fc0", "#33ff66", "#00d4ff", "#ff66aa", "#ffaa00"];
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.globalAlpha = 0.4 + Math.sin(t * 0.005 + i) * 0.3;
+      const sz = 2 + (i % 3);
+      ctx.fillRect(Math.floor(x), Math.floor(y), sz, sz);
+      // Star sparkle on some
+      if (i % 4 === 0) {
+        ctx.fillRect(Math.floor(x) - 2, Math.floor(y), sz + 4, 1);
+        ctx.fillRect(Math.floor(x), Math.floor(y) - 2, 1, sz + 4);
+      }
+    }
+    ctx.globalAlpha = 1;
+  };
+
   const drawLevelComplete = (ctx: CanvasRenderingContext2D, lvl: LevelConfig) => {
     const w = ctx.canvas.width,
       h = ctx.canvas.height;
-    ctx.fillStyle = "rgba(0,10,0,0.9)";
+    ctx.fillStyle = "rgba(0,10,0,0.92)";
     ctx.fillRect(0, 0, w, h);
-    glowText(ctx, "YOU WON!", w / 2, h * 0.22, "#33ff66", "#33ff66", "bold 48px monospace");
-    glowText(ctx, `You rescued ${lvl.founder}!`, w / 2, h * 0.22 + 50, "#fc0", "#fc0", "bold 22px monospace");
-    // Pixel art: player + freed founder
+    drawCelebration(ctx, w, h);
+    glowText(ctx, "YOU WON!", w / 2, h * 0.15, "#33ff66", "#33ff66", "bold 48px monospace");
+    glowText(ctx, `You rescued ${lvl.founder}!`, w / 2, h * 0.15 + 46, "#fc0", "#fc0", "bold 20px monospace");
+    // Player (left) and Founder (right) - large, centered
     const cx = w / 2;
-    drawPlayer(ctx, cx - 40, h * 0.46, false, Date.now(), false);
-    ctx.fillStyle = "#e8b888";
-    ctx.fillRect(cx + 20, h * 0.46 + 6, 14, 12);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(cx + 18, h * 0.46 + 20, 18, 16);
-    ctx.fillStyle = "#fc0";
-    ctx.font = "bold 10px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(lvl.founder.split(" ")[0], cx + 27, h * 0.46 + 48);
+    const charY = h * 0.38;
+    // Player astronaut (scaled up using transform)
+    ctx.save();
+    ctx.translate(cx - 70, charY);
+    ctx.scale(1.5, 1.5);
+    drawPlayer(ctx, 0, 0, false, Date.now(), false);
+    ctx.restore();
+    // Founder (freed)
+    drawFounderBig(ctx, cx + 30, charY, lvl.founder);
     // TAP to continue
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
     ctx.font = "bold 20px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("TAP to continue", w / 2, h * 0.72);
+    ctx.fillText("TAP to continue", w / 2, h * 0.76);
     ctx.globalAlpha = 1;
     // HOME button
     const btnW = 120,
       btnH = 38,
       bx = w / 2 - btnW / 2,
-      btnY = h * 0.78;
+      btnY = h * 0.82;
     ctx.fillStyle = "#1a1a3a";
     roundRect(ctx, bx, btnY, btnW, btnH, 8);
     ctx.fill();
@@ -1068,22 +1086,29 @@ export const GameCanvas = ({
       h = ctx.canvas.height;
     ctx.fillStyle = "rgba(4,4,16,0.92)";
     ctx.fillRect(0, 0, w, h);
-    glowText(ctx, `Ready for Level ${nextLvl.level}?`, w / 2, h * 0.3, "#00d4ff", "#00d4ff", "bold 32px monospace");
-    ctx.fillStyle = "#fc0";
-    ctx.font = "20px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(`Rescue ${nextLvl.founder}`, w / 2, h * 0.3 + 40);
-    // TAP to continue
+    drawCelebration(ctx, w, h);
+    glowText(ctx, `Level ${nextLvl.level}`, w / 2, h * 0.14, "#00d4ff", "#00d4ff", "bold 42px monospace");
+    glowText(ctx, `Rescue ${nextLvl.founder}`, w / 2, h * 0.14 + 42, "#fc0", "#fc0", "bold 20px monospace");
+    // Founder in cage + player ready
+    const cx = w / 2;
+    ctx.save();
+    ctx.translate(cx - 90, h * 0.36);
+    ctx.scale(1.3, 1.3);
+    drawPlayer(ctx, 0, 0, false, Date.now(), true);
+    ctx.restore();
+    drawFounderCage(ctx, cx + 10, h * 0.38, nextLvl.founder, Date.now());
+    // TAP
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
     ctx.font = "bold 20px monospace";
-    ctx.fillText("TAP to continue", w / 2, h * 0.62);
+    ctx.textAlign = "center";
+    ctx.fillText("TAP to continue", w / 2, h * 0.68);
     ctx.globalAlpha = 1;
     // HOME button
     const btnW = 120,
       btnH = 44,
       bx = w / 2 - btnW / 2,
-      btnY = h * 0.7;
+      btnY = h * 0.76;
     ctx.fillStyle = "#1a1a3a";
     roundRect(ctx, bx, btnY, btnW, btnH, 8);
     ctx.fill();
@@ -1461,15 +1486,13 @@ export const GameCanvas = ({
         if (hit(mx, my, lvlCompleteBtns.current.home)) {
           fullReset();
           g.state = "menu";
-          audio.stopAll();
           audio.playTrack("intro");
           return;
         }
         if (g.currentLevel >= LEVELS.length - 1) {
           g.state = "game_complete";
           fireGameOver();
-          audio.stopAll();
-          audio.play("winner");
+          audio.playTrack("winner");
         } else {
           g.state = "level_transition";
           audio.playTrack("intro");
@@ -1481,7 +1504,6 @@ export const GameCanvas = ({
         if (hit(mx, my, lvlTransBtns.current.home)) {
           fullReset();
           g.state = "menu";
-          audio.stopAll();
           audio.playTrack("intro");
           return;
         }
@@ -1553,8 +1575,8 @@ export const GameCanvas = ({
         ctx.fillStyle = "#7788aa";
         ctx.font = "15px monospace";
         ctx.textAlign = "center";
-        ctx.fillText("Connect your wallet to save scores", w / 2, h * 0.35);
-        // CONNECT WALLET button
+        ctx.fillText("Create a wallet with passkey to save scores", w / 2, h * 0.35);
+        // CREATE WALLET button
         const cbW = 260,
           cbH = 50,
           cbX = w / 2 - cbW / 2,
@@ -1569,7 +1591,7 @@ export const GameCanvas = ({
         ctx.fillStyle = "#00d4ff";
         ctx.font = "bold 18px monospace";
         ctx.textAlign = "center";
-        ctx.fillText("CONNECT WALLET", w / 2, cbY + cbH / 2 + 6);
+        ctx.fillText("CREATE WALLET", w / 2, cbY + cbH / 2 + 6);
         tapEnterBtns.connect = { x: cbX, y: cbY, w: cbW, h: cbH };
         // OR play without wallet
         const pulse = 0.5 + Math.sin(Date.now() * 0.004) * 0.5;
@@ -1691,7 +1713,7 @@ export const GameCanvas = ({
         if (playerX >= g.founderX && !g.founderPassed) {
           g.founderPassed = true;
           g.state = "level_complete";
-          audio.play("sfx_victory");
+          audio.play("sfx_coin");
           audio.playTrack("intro"); // play intro music on victory screen
           return;
         }
@@ -1763,7 +1785,7 @@ export const GameCanvas = ({
                   duration: 2000,
                 });
                 g.flash = { color: "#fc0", startTime: now, duration: 400 };
-                audio.play("sfx_correct");
+                audio.play("sfx_coin");
               } else {
                 g.streak = 0;
                 g.lives--;
@@ -1774,8 +1796,7 @@ export const GameCanvas = ({
                 audio.play("sfx_wrong");
                 if (g.lives <= 0) {
                   g.state = "gameover";
-                  audio.stopAll();
-                  audio.play("gameover");
+                  audio.playTrack("gameover");
                   fireGameOver();
                   return;
                 }
@@ -1819,8 +1840,7 @@ export const GameCanvas = ({
           g.invulnUntil = now + INVULN_DURATION;
           if (g.lives <= 0) {
             g.state = "gameover";
-            audio.stopAll();
-            audio.play("gameover");
+            audio.playTrack("gameover");
             fireGameOver();
             return;
           }

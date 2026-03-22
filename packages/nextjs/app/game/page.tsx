@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { usePrivy } from "@privy-io/react-auth";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
@@ -20,10 +21,15 @@ const GameCanvas = dynamic(() => import("~~/components/game/GameCanvas").then(m 
 
 const GamePage: NextPage = () => {
   const router = useRouter();
-  const { address } = useAccount();
+  const { address: wagmiAddress } = useAccount();
   const { openConnectModal } = useConnectModal();
+  const { login, user, authenticated } = usePrivy();
   const [lastGameData, setLastGameData] = useState<GameOverData | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Use Privy wallet if available, otherwise wagmi
+  const privyAddress = authenticated && user?.wallet?.address ? user.wallet.address : undefined;
+  const address = (privyAddress || wagmiAddress) as `0x${string}` | undefined;
 
   const { data: leaderboard } = useScaffoldReadContract({
     contractName: "CryptoRunnerLeaderboard",
@@ -53,13 +59,10 @@ const GamePage: NextPage = () => {
     if (!lastGameData || !address) return;
     setSaveStatus("saving");
     try {
-      // Save player score to leaderboard
       await writeLeaderboard({
         functionName: "submitScore",
         args: [BigInt(lastGameData.score), BigInt(lastGameData.correctAnswers)],
       });
-
-      // Update bot agent stats (ERC-8004 agents react to game state)
       try {
         await writeAgents({
           functionName: "updateRaceResults",
@@ -80,10 +83,8 @@ const GamePage: NextPage = () => {
           ],
         });
       } catch {
-        // Bot stats update is non-critical, don't fail the save
         console.warn("Failed to update bot agent stats");
       }
-
       setSaveStatus("saved");
     } catch {
       setSaveStatus("error");
@@ -94,6 +95,15 @@ const GamePage: NextPage = () => {
     router.push("/leaderboard");
   }, [router]);
 
+  // Use Privy login if available, RainbowKit as fallback
+  const handleConnectWallet = useCallback(() => {
+    if (process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+      login();
+    } else {
+      openConnectModal?.();
+    }
+  }, [login, openConnectModal]);
+
   return (
     <div className="w-full h-full">
       <GameCanvas
@@ -103,7 +113,7 @@ const GamePage: NextPage = () => {
         saveStatus={saveStatus}
         onSaveScore={handleSaveScore}
         onViewLeaderboard={handleViewLeaderboard}
-        onConnectWallet={openConnectModal}
+        onConnectWallet={handleConnectWallet}
       />
     </div>
   );

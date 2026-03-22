@@ -33,7 +33,7 @@ const LeaderboardPage: NextPage = () => {
 
   // 5 second timeout for loading
   useEffect(() => {
-    const t = setTimeout(() => setTimedOut(true), 5000);
+    const t = setTimeout(() => setTimedOut(true), 3000);
     return () => clearTimeout(t);
   }, []);
 
@@ -99,7 +99,16 @@ const LeaderboardPage: NextPage = () => {
         {showLoading ? (
           <div className="text-center py-8 font-mono opacity-60">Loading scores...</div>
         ) : entries.length === 0 ? (
-          <div className="text-center py-8 font-mono opacity-60">No scores yet. Be the first to play!</div>
+          <div className="text-center py-8 font-mono">
+            <p className="opacity-60 mb-4">No scores yet. Play to be the first!</p>
+            <Link
+              href="/"
+              className="px-6 py-2 rounded-lg font-bold no-underline"
+              style={{ background: "#0a4a6a", color: "#00d4ff" }}
+            >
+              PLAY NOW
+            </Link>
+          </div>
         ) : (
           <table className="w-full font-mono text-sm">
             <thead>
