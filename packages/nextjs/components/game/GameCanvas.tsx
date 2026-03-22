@@ -377,6 +377,27 @@ export const GameCanvas = ({
     ctx.closePath();
   };
 
+  // ── Responsive text helpers ────────────────────────
+  const fs = (base: number, cw: number) => Math.max(Math.round(base * (cw / 800)), Math.round(base * 0.55));
+  const btnW = (cw: number) => Math.min(280, Math.round(cw * 0.8));
+
+  const wrapText = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) => {
+    const words = text.split(" ");
+    let line = "";
+    let ly = y;
+    for (const word of words) {
+      const test = line + (line ? " " : "") + word;
+      if (ctx.measureText(test).width > maxW && line) {
+        ctx.fillText(line, x, ly);
+        line = word;
+        ly += lineH;
+      } else {
+        line = test;
+      }
+    }
+    if (line) ctx.fillText(line, x, ly);
+  };
+
   const glowText = (
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -799,44 +820,46 @@ export const GameCanvas = ({
     const w = ctx.canvas.width,
       h = ctx.canvas.height;
     ctx.save();
+    const hf = (b: number) => fs(b, w); // HUD font shorthand
     // Score
     ctx.fillStyle = "#fc0";
     ctx.beginPath();
-    ctx.arc(30, 28, 10, 0, Math.PI * 2);
+    ctx.arc(24, 24, hf(10), 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#b8860b";
-    ctx.font = "bold 10px monospace";
+    ctx.font = `bold ${hf(9)}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("\u20bf", 30, 29);
+    ctx.fillText("\u20bf", 24, 25);
     ctx.textBaseline = "alphabetic";
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 20px monospace";
+    ctx.font = `bold ${hf(18)}px monospace`;
     ctx.textAlign = "left";
-    ctx.fillText(`${g.score}`, 46, 34);
-    // Timer (left-center, away from hearts)
+    ctx.fillText(`${g.score}`, 38, 30);
+    // Timer
     const ms = g.totalTime,
       mins = Math.floor(ms / 60000),
       secs = Math.floor((ms % 60000) / 1000),
       centi = Math.floor((ms % 1000) / 10);
-    ctx.textAlign = "left";
     ctx.fillStyle = "#ddeeff";
-    ctx.font = "bold 16px monospace";
+    ctx.font = `bold ${hf(14)}px monospace`;
+    ctx.textAlign = "left";
     ctx.fillText(
       `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(centi).padStart(2, "0")}`,
-      140,
-      34,
+      Math.min(120, w * 0.15),
+      30,
     );
     // Race position
     const racePos = g.bots.filter(b => b.distance > g.levelDist).length + 1;
     const suffix = racePos === 1 ? "st" : racePos === 2 ? "nd" : racePos === 3 ? "rd" : "th";
     ctx.fillStyle = racePos === 1 ? "#fc0" : "#8899bb";
-    ctx.font = "bold 13px monospace";
-    ctx.fillText(`${racePos}${suffix} of 5`, 140, 52);
+    ctx.font = `bold ${hf(12)}px monospace`;
+    ctx.fillText(`${racePos}${suffix} of 5`, Math.min(120, w * 0.15), 48);
     // Hearts
+    const heartSp = Math.min(28, w * 0.04);
     for (let i = 0; i < MAX_LIVES; i++) {
       ctx.fillStyle = i < g.lives ? "#ff3366" : "#333355";
-      drawHeart(ctx, w - 30 - i * 28, 28, 10);
+      drawHeart(ctx, w - 24 - i * heartSp, 24, Math.min(10, w * 0.015));
     }
     // Founder distance - pixel-based when visible, estimated before
     const lvl = LEVELS[g.currentLevel];
@@ -859,15 +882,14 @@ export const GameCanvas = ({
     }
     ctx.textAlign = "right";
     ctx.fillStyle = remaining < 50 ? "#fc0" : "#8899bb";
-    ctx.font = "bold 14px monospace";
-    ctx.fillText(`${lvl.founder}: ${remaining}m`, w - 20, 68);
-    // Wallet
+    ctx.font = `bold ${hf(12)}px monospace`;
+    ctx.fillText(`${lvl.founder.split(" ")[0]}: ${remaining}m`, w - 20, 62);
     const p = propsRef.current;
     if (p.walletAddress) {
       ctx.fillStyle = "#556688";
-      ctx.font = "12px monospace";
+      ctx.font = `${hf(10)}px monospace`;
       ctx.textAlign = "left";
-      ctx.fillText(p.walletAddress.slice(0, 6) + "..." + p.walletAddress.slice(-4), 20, h - 50);
+      ctx.fillText(p.walletAddress.slice(0, 6) + "..." + p.walletAddress.slice(-4), 10, h - 48);
     }
     // Race position bar (right side)
     const barX = w - 14,
@@ -902,7 +924,7 @@ export const GameCanvas = ({
       const pr = el / f.duration;
       ctx.globalAlpha = 1 - pr;
       ctx.fillStyle = f.color;
-      ctx.font = "bold 24px monospace";
+      ctx.font = `bold ${fs(22, ctx.canvas.width)}px monospace`;
       ctx.textAlign = "center";
       ctx.fillText(f.text, f.x, f.y - pr * 50);
     }
@@ -931,30 +953,38 @@ export const GameCanvas = ({
       ctx.fillRect(0, y, w, 1);
     }
     ctx.globalAlpha = 1;
-    glowText(ctx, "CRYPTO RUNNER", w / 2, h * 0.26, "#00d4ff", "#00d4ff", "bold 44px monospace");
-    glowText(ctx, "RESCUE THE FOUNDERS", w / 2, h * 0.26 + 48, "#e94560", "#e94560", "bold 20px monospace");
+    glowText(ctx, "SPACE RUNNERS", w / 2, h * 0.26, "#00d4ff", "#00d4ff", `bold ${fs(44, w)}px monospace`);
+    glowText(
+      ctx,
+      "RESCUE THE FOUNDERS",
+      w / 2,
+      h * 0.26 + fs(44, w),
+      "#e94560",
+      "#e94560",
+      `bold ${fs(20, w)}px monospace`,
+    );
     ctx.fillStyle = "#7788aa";
-    ctx.font = "14px monospace";
+    ctx.font = `${fs(13, w)}px monospace`;
     ctx.textAlign = "center";
-    ctx.fillText("5 levels  \u00b7  5 founders  \u00b7  True or False trivia", w / 2, h * 0.46);
-    ctx.fillText("HOLD to fly  \u00b7  RELEASE to fall", w / 2, h * 0.46 + 24);
+    wrapText(ctx, "5 levels \u00b7 5 founders \u00b7 True or False trivia", w / 2, h * 0.46, w * 0.9, fs(18, w));
+    ctx.fillText("HOLD to fly \u00b7 RELEASE to fall", w / 2, h * 0.46 + fs(22, w));
     const p = propsRef.current;
     if (p.walletAddress) {
       ctx.fillStyle = "#3f6";
-      ctx.font = "14px monospace";
+      ctx.font = `${fs(13, w)}px monospace`;
       ctx.fillText("\u2713 " + p.walletAddress.slice(0, 6) + "..." + p.walletAddress.slice(-4), w / 2, h * 0.62);
     } else {
       ctx.fillStyle = "#556677";
-      ctx.font = "13px monospace";
+      ctx.font = `${fs(12, w)}px monospace`;
       ctx.fillText("Connect wallet to save scores", w / 2, h * 0.62);
     }
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
-    glowText(ctx, "\u25b6 TAP TO START", w / 2, h * 0.76, "#fc0", "#fc0", "bold 24px monospace");
+    glowText(ctx, "\u25b6 TAP TO START", w / 2, h * 0.76, "#fc0", "#fc0", `bold ${fs(24, w)}px monospace`);
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#334455";
-    ctx.font = "11px monospace";
+    ctx.font = `${fs(10, w)}px monospace`;
     ctx.textAlign = "center";
-    ctx.fillText("Aleph Hackathon 2026  \u00b7  Avalanche + GenLayer", w / 2, h - 16);
+    ctx.fillText("Aleph Hackathon 2026", w / 2, h - fs(14, w));
   };
 
   const drawLevelIntro = (ctx: CanvasRenderingContext2D, lvl: LevelConfig) => {
@@ -962,15 +992,15 @@ export const GameCanvas = ({
       h = ctx.canvas.height;
     ctx.fillStyle = "rgba(4,4,16,0.92)";
     ctx.fillRect(0, 0, w, h);
-    glowText(ctx, `LEVEL ${lvl.level}`, w / 2, h * 0.3, "#00d4ff", "#00d4ff", "bold 48px monospace");
-    glowText(ctx, `Rescue ${lvl.founder}`, w / 2, h * 0.3 + 52, "#fc0", "#fc0", "bold 24px monospace");
+    glowText(ctx, `LEVEL ${lvl.level}`, w / 2, h * 0.3, "#00d4ff", "#00d4ff", `bold ${fs(48, w)}px monospace`);
+    glowText(ctx, `Rescue ${lvl.founder}`, w / 2, h * 0.3 + fs(48, w), "#fc0", "#fc0", `bold ${fs(22, w)}px monospace`);
     ctx.fillStyle = "#7788aa";
-    ctx.font = "16px monospace";
+    ctx.font = `${fs(15, w)}px monospace`;
     ctx.textAlign = "center";
     ctx.fillText(`Distance: ${lvl.targetDist}m`, w / 2, h * 0.55);
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 20px monospace";
+    ctx.font = `bold ${fs(20, w)}px monospace`;
     ctx.fillText("TAP", w / 2, h * 0.72);
     ctx.globalAlpha = 1;
   };
@@ -1044,8 +1074,16 @@ export const GameCanvas = ({
     ctx.fillStyle = "rgba(0,10,0,0.92)";
     ctx.fillRect(0, 0, w, h);
     drawCelebration(ctx, w, h);
-    glowText(ctx, "YOU WON!", w / 2, h * 0.15, "#33ff66", "#33ff66", "bold 48px monospace");
-    glowText(ctx, `You rescued ${lvl.founder}!`, w / 2, h * 0.15 + 46, "#fc0", "#fc0", "bold 20px monospace");
+    glowText(ctx, "YOU WON!", w / 2, h * 0.15, "#33ff66", "#33ff66", `bold ${fs(46, w)}px monospace`);
+    glowText(
+      ctx,
+      `You rescued ${lvl.founder}!`,
+      w / 2,
+      h * 0.15 + fs(42, w),
+      "#fc0",
+      "#fc0",
+      `bold ${fs(18, w)}px monospace`,
+    );
     // Player (left) and Founder (right) - large, centered
     const cx = w / 2;
     const charY = h * 0.38;
@@ -1060,22 +1098,22 @@ export const GameCanvas = ({
     // TAP to continue
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 20px monospace";
+    ctx.font = `bold ${fs(18, w)}px monospace`;
     ctx.textAlign = "center";
     ctx.fillText("TAP to continue", w / 2, h * 0.76);
     ctx.globalAlpha = 1;
     // HOME button
-    const btnW = 120,
-      btnH = 38,
-      bx = w / 2 - btnW / 2,
-      btnY = h * 0.82;
+    const bwLC = btnW(w) * 0.5,
+      bhLC = Math.max(36, fs(38, w)),
+      bx = w / 2 - bwLC / 2,
+      btnYLC = h * 0.82;
     ctx.fillStyle = "#1a1a3a";
-    roundRect(ctx, bx, btnY, btnW, btnH, 8);
+    roundRect(ctx, bx, btnYLC, bwLC, bhLC, 8);
     ctx.fill();
     ctx.fillStyle = "#8899bb";
-    ctx.font = "bold 14px monospace";
-    ctx.fillText("HOME", w / 2, btnY + btnH / 2 + 5);
-    lvlCompleteBtns.current.home = { x: bx, y: btnY, w: btnW, h: btnH };
+    ctx.font = `bold ${fs(14, w)}px monospace`;
+    ctx.fillText("HOME", w / 2, btnYLC + bhLC / 2 + 5);
+    lvlCompleteBtns.current.home = { x: bx, y: btnYLC, w: bwLC, h: bhLC };
   };
 
   // Level transition button hit areas
@@ -1087,9 +1125,16 @@ export const GameCanvas = ({
     ctx.fillStyle = "rgba(4,4,16,0.92)";
     ctx.fillRect(0, 0, w, h);
     drawCelebration(ctx, w, h);
-    glowText(ctx, `Level ${nextLvl.level}`, w / 2, h * 0.14, "#00d4ff", "#00d4ff", "bold 42px monospace");
-    glowText(ctx, `Rescue ${nextLvl.founder}`, w / 2, h * 0.14 + 42, "#fc0", "#fc0", "bold 20px monospace");
-    // Founder in cage + player ready
+    glowText(ctx, `Level ${nextLvl.level}`, w / 2, h * 0.14, "#00d4ff", "#00d4ff", `bold ${fs(42, w)}px monospace`);
+    glowText(
+      ctx,
+      `Rescue ${nextLvl.founder}`,
+      w / 2,
+      h * 0.14 + fs(40, w),
+      "#fc0",
+      "#fc0",
+      `bold ${fs(18, w)}px monospace`,
+    );
     const cx = w / 2;
     ctx.save();
     ctx.translate(cx - 90, h * 0.36);
@@ -1097,26 +1142,24 @@ export const GameCanvas = ({
     drawPlayer(ctx, 0, 0, false, Date.now(), true);
     ctx.restore();
     drawFounderCage(ctx, cx + 10, h * 0.38, nextLvl.founder, Date.now());
-    // TAP
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 20px monospace";
+    ctx.font = `bold ${fs(18, w)}px monospace`;
     ctx.textAlign = "center";
     ctx.fillText("TAP to continue", w / 2, h * 0.68);
     ctx.globalAlpha = 1;
-    // HOME button
-    const btnW = 120,
-      btnH = 44,
-      bx = w / 2 - btnW / 2,
-      btnY = h * 0.76;
+    const bwT = btnW(w) * 0.5,
+      bhT = Math.max(40, fs(44, w)),
+      bxT = w / 2 - bwT / 2,
+      byT = h * 0.76;
     ctx.fillStyle = "#1a1a3a";
-    roundRect(ctx, bx, btnY, btnW, btnH, 8);
+    roundRect(ctx, bxT, byT, bwT, bhT, 8);
     ctx.fill();
     ctx.fillStyle = "#8899bb";
-    ctx.font = "bold 14px monospace";
+    ctx.font = `bold ${fs(14, w)}px monospace`;
     ctx.textAlign = "center";
-    ctx.fillText("HOME", w / 2, btnY + btnH / 2 + 5);
-    lvlTransBtns.current.home = { x: bx, y: btnY, w: btnW, h: btnH };
+    ctx.fillText("HOME", w / 2, byT + bhT / 2 + 5);
+    lvlTransBtns.current.home = { x: bxT, y: byT, w: bwT, h: bhT };
   };
 
   const drawGameComplete = (ctx: CanvasRenderingContext2D, g: ReturnType<typeof mkGame>) => {
@@ -1570,41 +1613,39 @@ export const GameCanvas = ({
           ctx.fillRect(0, sy, w, 1);
         }
         ctx.globalAlpha = 1;
-        glowText(ctx, "SPACE RUNNERS", w / 2, h * 0.22, "#00d4ff", "#00d4ff", "bold 44px monospace");
-        // Subtitle
+        glowText(ctx, "SPACE RUNNERS", w / 2, h * 0.22, "#00d4ff", "#00d4ff", `bold ${fs(44, w)}px monospace`);
         ctx.fillStyle = "#7788aa";
-        ctx.font = "15px monospace";
+        ctx.font = `${fs(14, w)}px monospace`;
         ctx.textAlign = "center";
-        ctx.fillText("Create a wallet with passkey to save scores", w / 2, h * 0.35);
+        wrapText(ctx, "Create a wallet with passkey to save scores", w / 2, h * 0.35, w * 0.9, fs(18, w));
         // CREATE WALLET button
-        const cbW = 260,
-          cbH = 50,
-          cbX = w / 2 - cbW / 2,
-          cbY = h * 0.42;
+        const cbW2 = btnW(w),
+          cbH2 = Math.max(44, fs(50, w)),
+          cbX2 = w / 2 - cbW2 / 2,
+          cbY2 = h * 0.42;
         ctx.fillStyle = "#0a4a6a";
-        roundRect(ctx, cbX, cbY, cbW, cbH, 10);
+        roundRect(ctx, cbX2, cbY2, cbW2, cbH2, 10);
         ctx.fill();
         ctx.strokeStyle = "#00d4ff";
         ctx.lineWidth = 2;
-        roundRect(ctx, cbX, cbY, cbW, cbH, 10);
+        roundRect(ctx, cbX2, cbY2, cbW2, cbH2, 10);
         ctx.stroke();
         ctx.fillStyle = "#00d4ff";
-        ctx.font = "bold 18px monospace";
+        ctx.font = `bold ${fs(18, w)}px monospace`;
         ctx.textAlign = "center";
-        ctx.fillText("CREATE WALLET", w / 2, cbY + cbH / 2 + 6);
-        tapEnterBtns.connect = { x: cbX, y: cbY, w: cbW, h: cbH };
+        ctx.fillText("CREATE WALLET", w / 2, cbY2 + cbH2 / 2 + 6);
+        tapEnterBtns.connect = { x: cbX2, y: cbY2, w: cbW2, h: cbH2 };
         // OR play without wallet
         const pulse = 0.5 + Math.sin(Date.now() * 0.004) * 0.5;
         ctx.globalAlpha = 0.6 + pulse * 0.4;
         ctx.fillStyle = "#8899aa";
-        ctx.font = "16px monospace";
-        ctx.fillText("or TAP TO PLAY WITHOUT WALLET", w / 2, h * 0.65);
+        ctx.font = `${fs(14, w)}px monospace`;
+        wrapText(ctx, "or TAP TO PLAY WITHOUT WALLET", w / 2, h * 0.62, w * 0.9, fs(18, w));
         ctx.globalAlpha = 1;
-        // Footer
         ctx.fillStyle = "#334455";
-        ctx.font = "12px monospace";
+        ctx.font = `${fs(11, w)}px monospace`;
         ctx.textAlign = "center";
-        ctx.fillText("Aleph Hackathon 2026  \u00b7  Avalanche + GenLayer", w / 2, h - 20);
+        ctx.fillText("Aleph Hackathon 2026", w / 2, h - fs(16, w));
         return;
       }
 
