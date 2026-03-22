@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────
 interface Obstacle {
@@ -199,9 +199,11 @@ class AudioManager {
     } catch {}
   }
 
+  paused = false; // flag to block audio during modal interactions
+
   // Play a music track. ALWAYS stops everything first. Only one track at a time.
   playTrack(name: string) {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || this.paused) return;
     if (name === this.currentTrack) return; // already playing
     this.stopAll(); // STOP everything before playing new track
     this.currentTrack = name;
@@ -293,6 +295,8 @@ export const GameCanvas = ({
   };
   const audioRef = useRef<AudioManager | null>(null);
   if (typeof window !== "undefined" && !audioRef.current) audioRef.current = new AudioManager();
+  const [showSplash, setShowSplash] = useState(true);
+  const splashDismissed = useRef(false); // shared flag between React and game loop
   const gameOverBtns = useRef({
     save: { x: 0, y: 0, w: 0, h: 0 },
     leaderboard: { x: 0, y: 0, w: 0, h: 0 },
@@ -861,24 +865,17 @@ export const GameCanvas = ({
       ctx.fillStyle = i < g.lives ? "#ff3366" : "#333355";
       drawHeart(ctx, w - 24 - i * heartSp, 24, Math.min(10, w * 0.015));
     }
-    // Founder distance - pixel-based when visible, estimated before
+    // Founder distance - simple and correct
     const lvl = LEVELS[g.currentLevel];
-    const playerX = w * PLAYER_X_RATIO;
-    const PIXELS_PER_METER = 6; // conversion factor
+    const playerXhud = w * PLAYER_X_RATIO;
     let remaining: number;
-    if (g.founderSpawned && g.founderX < w + 60) {
-      // Founder is on screen or nearby: use REAL pixel distance
-      remaining = Math.max(0, Math.round((g.founderX - playerX) / PIXELS_PER_METER));
-    } else if (g.founderSpawned) {
-      // Spawned but still off-screen right
-      remaining = Math.max(1, Math.floor(g.founderSpawnDist - g.levelDist));
+    if (g.founderSpawned && g.founderX < w + 100) {
+      // Founder visible or near screen: use pixel distance
+      const pixDist = g.founderX - playerXhud;
+      remaining = pixDist > 0 ? Math.max(1, Math.round(pixDist / 6)) : 0;
     } else {
-      // Not spawned yet: estimate based on question spacing
-      const qPerLvl = [1, 2, 3, 4, 5];
-      const nq = qPerLvl[g.currentLevel] || 3;
-      const lastQDist = (lvl.targetDist * nq) / (nq + 1);
-      const estFounderDist = lastQDist + 20;
-      remaining = Math.max(1, Math.floor(estFounderDist - g.levelDist));
+      // Use pre-computed total distance minus distance traveled
+      remaining = Math.max(1, Math.round(g.founderTotalDist - g.levelDist));
     }
     ctx.textAlign = "right";
     ctx.fillStyle = remaining < 50 ? "#fc0" : "#8899bb";
@@ -1359,10 +1356,12 @@ export const GameCanvas = ({
       // Founder spawning
       allQDone: false,
       founderSpawned: false,
-      founderSpawnDist: 0, // levelDist when founder was spawned
+      founderSpawnDist: 0,
+      founderTotalDist: 0, // pre-computed: total distance to founder from level start
       founderX: 0,
       founderY: 0,
       founderPassed: false,
+      debugCounter: 0,
     };
   }
 
@@ -1410,13 +1409,22 @@ export const GameCanvas = ({
         resultUntil: 0,
       };
       g.lastTriviaTime = 0;
-      g.triviaCount = 0; // reset per-level trivia count
+      g.triviaCount = 0;
       g.allQDone = false;
       g.founderSpawned = false;
       g.founderSpawnDist = 0;
       g.founderX = 0;
       g.founderY = 0;
       g.founderPassed = false;
+      g.debugCounter = 0;
+      // Pre-compute founder total distance: last question position + 20m
+      const qCounts = [1, 2, 3, 4, 5];
+      const nq = qCounts[levelIdx] || 3;
+      const lastQPos = (lvl.targetDist * nq) / (nq + 1);
+      g.founderTotalDist = lastQPos + 20;
+      console.log(
+        `[Level ${levelIdx + 1}] founderTotalDist=${g.founderTotalDist.toFixed(0)}, targetDist=${lvl.targetDist}`,
+      );
       g.floats = [];
       g.flash = null;
       // Reset bots for this level
@@ -1489,25 +1497,10 @@ export const GameCanvas = ({
 
     const audio = audioRef.current!;
 
-    // Hit areas for tap_to_enter buttons
-    const tapEnterBtns = { connect: { x: 0, y: 0, w: 0, h: 0 }, play: { x: 0, y: 0, w: 0, h: 0 } };
-
     const onDown = (e: MouseEvent | Touch, isTouch = false) => {
       audio.userStart(); // unlock audio on first tap
       if (g.state === "tap_to_enter") {
-        const { mx, my } = getCP(e.clientX, e.clientY);
-        // Connect wallet button
-        if (hit(mx, my, tapEnterBtns.connect)) {
-          propsRef.current.onConnectWallet?.();
-          // Go to menu after triggering connect
-          g.state = "menu";
-          audio.playTrack("intro");
-          return;
-        }
-        // Play without wallet (tap anywhere else)
-        g.state = "menu";
-        audio.playTrack("intro");
-        console.log("[Audio] First tap -> playing intro.mp3");
+        // tap_to_enter is handled by HTML overlay buttons, ignore canvas taps
         return;
       }
       if (g.state === "menu") {
@@ -1604,6 +1597,10 @@ export const GameCanvas = ({
         h = canvas.height;
 
       // ── TAP TO ENTER / WALLET CONNECT splash ────────
+      // Check if HTML buttons dismissed the splash
+      if (g.state === "tap_to_enter" && splashDismissed.current) {
+        g.state = "menu";
+      }
       if (g.state === "tap_to_enter") {
         ctx.fillStyle = "#040410";
         ctx.fillRect(0, 0, w, h);
@@ -1617,31 +1614,11 @@ export const GameCanvas = ({
         ctx.fillStyle = "#7788aa";
         ctx.font = `${fs(14, w)}px monospace`;
         ctx.textAlign = "center";
-        wrapText(ctx, "Create a wallet with passkey to save scores", w / 2, h * 0.35, w * 0.9, fs(18, w));
-        // CREATE WALLET button
-        const cbW2 = btnW(w),
-          cbH2 = Math.max(44, fs(50, w)),
-          cbX2 = w / 2 - cbW2 / 2,
-          cbY2 = h * 0.42;
-        ctx.fillStyle = "#0a4a6a";
-        roundRect(ctx, cbX2, cbY2, cbW2, cbH2, 10);
-        ctx.fill();
-        ctx.strokeStyle = "#00d4ff";
-        ctx.lineWidth = 2;
-        roundRect(ctx, cbX2, cbY2, cbW2, cbH2, 10);
-        ctx.stroke();
-        ctx.fillStyle = "#00d4ff";
-        ctx.font = `bold ${fs(18, w)}px monospace`;
-        ctx.textAlign = "center";
-        ctx.fillText("CREATE WALLET", w / 2, cbY2 + cbH2 / 2 + 6);
-        tapEnterBtns.connect = { x: cbX2, y: cbY2, w: cbW2, h: cbH2 };
-        // OR play without wallet
-        const pulse = 0.5 + Math.sin(Date.now() * 0.004) * 0.5;
-        ctx.globalAlpha = 0.6 + pulse * 0.4;
-        ctx.fillStyle = "#8899aa";
-        ctx.font = `${fs(14, w)}px monospace`;
-        wrapText(ctx, "or TAP TO PLAY WITHOUT WALLET", w / 2, h * 0.62, w * 0.9, fs(18, w));
-        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#7788aa";
+        ctx.font = `${fs(13, w)}px monospace`;
+        wrapText(ctx, "Create a wallet to save scores", w / 2, h * 0.34, w * 0.9, fs(18, w));
+        // Buttons are HTML overlays (required for WebAuthn passkey)
+        // Footer
         ctx.fillStyle = "#334455";
         ctx.font = `${fs(11, w)}px monospace`;
         ctx.textAlign = "center";
@@ -1740,12 +1717,20 @@ export const GameCanvas = ({
         g.allQDone = true;
       }
       // Spawn founder 20m after last question answered
+      // Place at exactly 20m ahead in pixel space (6px = 1m)
       if (g.allQDone && !g.founderSpawned) {
         g.founderSpawned = true;
-        g.founderSpawnDist = g.levelDist + 20; // founder is 20m ahead
-        g.founderX = w + 60; // spawn off-screen right
+        g.founderSpawnDist = g.levelDist + 20;
+        g.founderX = playerX + 20 * 6; // 20 meters * 6 px/m = 120px ahead of player
         g.founderY = h * 0.3 + Math.random() * h * 0.3;
-        console.log(`[Founder] Spawned at dist=${g.founderSpawnDist.toFixed(0)}, current=${g.levelDist.toFixed(0)}`);
+      }
+      // Debug log every 120 frames
+      g.debugCounter++;
+      if (g.debugCounter % 120 === 0 && g.founderTotalDist > 0) {
+        const pxd = g.founderSpawned ? g.founderX - playerX : -1;
+        console.log(
+          `[Dist] founderTotal=${g.founderTotalDist.toFixed(0)} levelDist=${g.levelDist.toFixed(0)} remain=${Math.round(g.founderTotalDist - g.levelDist)} spawned=${g.founderSpawned} fX=${g.founderX.toFixed(0)} pxDist=${pxd.toFixed(0)}`,
+        );
       }
       // Move founder left with scroll
       if (g.founderSpawned) {
@@ -1754,8 +1739,7 @@ export const GameCanvas = ({
         if (playerX >= g.founderX && !g.founderPassed) {
           g.founderPassed = true;
           g.state = "level_complete";
-          audio.play("sfx_coin");
-          audio.playTrack("intro"); // play intro music on victory screen
+          audio.playTrack("intro"); // victory music (stopAll first, then intro)
           return;
         }
       }
@@ -1995,13 +1979,71 @@ export const GameCanvas = ({
     };
   }, [resizeCanvas, initStars, spawnObs, spawnCoins]);
 
+  // HTML button handlers (real DOM clicks = trusted user gestures for WebAuthn/passkey)
+  const handleCreateWallet = useCallback(() => {
+    audioRef.current?.userStart();
+    propsRef.current.onConnectWallet?.();
+    // Transition to menu after Privy modal opens
+    splashDismissed.current = true;
+    setShowSplash(false);
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.paused = false;
+        audioRef.current.playTrack("intro");
+      }
+    }, 500);
+  }, []);
+
+  const handlePlayWithout = useCallback(() => {
+    audioRef.current?.userStart();
+    splashDismissed.current = true;
+    setShowSplash(false);
+    audioRef.current?.playTrack("intro");
+  }, []);
+
   return (
-    <div className="flex items-center justify-center w-full" style={{ height: "calc(100vh - 80px)" }}>
+    <div className="relative flex items-center justify-center w-full" style={{ height: "calc(100vh - 80px)" }}>
       <canvas
         ref={canvasRef}
         className="rounded-lg cursor-pointer block"
         style={{ touchAction: "none", userSelect: "none" }}
       />
+      {/* HTML overlay buttons for tap_to_enter - required for WebAuthn passkey to work */}
+      {showSplash && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+          style={{ pointerEvents: "auto", zIndex: 10, top: "38%" }}
+        >
+          <button
+            onClick={handleCreateWallet}
+            className="px-8 py-4 rounded-xl font-mono font-bold text-lg"
+            style={{
+              background: "#0a4a6a",
+              color: "#00d4ff",
+              border: "2px solid #00d4ff",
+              minWidth: "240px",
+              minHeight: "50px",
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
+          >
+            CREATE WALLET
+          </button>
+          <button
+            onClick={handlePlayWithout}
+            className="px-4 py-2 font-mono text-sm"
+            style={{
+              background: "transparent",
+              color: "#8899aa",
+              border: "none",
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
+          >
+            or TAP TO PLAY WITHOUT WALLET
+          </button>
+        </div>
+      )}
     </div>
   );
 };

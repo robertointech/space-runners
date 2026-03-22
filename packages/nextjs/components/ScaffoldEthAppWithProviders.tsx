@@ -13,6 +13,7 @@ import { BlockieAvatar } from "~~/components/scaffold-eth";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "";
+if (typeof window !== "undefined") console.log("[Privy] App ID:", PRIVY_APP_ID || "NOT SET");
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -63,9 +64,9 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ["passkey"],
-          appearance: { theme: "dark" },
-          embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
+          loginMethods: ["passkey", "wallet"],
+          appearance: { theme: "dark", logo: "/logo.jpeg" },
+          embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
         }}
       >
         {inner}
