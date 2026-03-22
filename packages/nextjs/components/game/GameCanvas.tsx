@@ -894,13 +894,14 @@ export const GameCanvas = ({
       barH = h - 160;
     ctx.fillStyle = "#111133";
     ctx.fillRect(barX - 3, barTop, 6, barH);
-    // Player dot
-    const pProg = Math.min(1, g.levelDist / lvl.targetDist);
+    // Player dot (progress based on founderTotalDist, not targetDist)
+    const progressBase = g.founderTotalDist > 0 ? g.founderTotalDist : lvl.targetDist;
+    const pProg = Math.min(1, g.levelDist / progressBase);
     ctx.fillStyle = "#00d4ff";
     ctx.fillRect(barX - 5, barTop + barH * (1 - pProg) - 3, 10, 6);
     // Bot dots
     for (const bot of g.bots) {
-      const bProg = Math.min(1, bot.distance / lvl.targetDist);
+      const bProg = Math.min(1, bot.distance / progressBase);
       ctx.fillStyle = bot.color;
       ctx.fillRect(barX - 3, barTop + barH * (1 - bProg) - 2, 6, 4);
     }
@@ -1397,6 +1398,7 @@ export const GameCanvas = ({
       g.nextObsDelay = OBSTACLE_SPAWN_MIN;
       g.lastCoinSpawn = 0;
       g.gameTime = 0;
+      g.lastFrameTime = 0; // CRITICAL: reset so first frame doesn't have huge dt
       g.bgOff1 = 0;
       g.bgOff2 = 0;
       g.trivia = {
@@ -1700,15 +1702,18 @@ export const GameCanvas = ({
         g.velocityY = 0;
       }
 
-      // Distance
-      const distDelta = g.scrollSpeed * dt * 10;
-      g.levelDist += distDelta;
-      g.totalDist += distDelta;
-      g.score += Math.floor(distDelta);
+      // Distance (scrollSpeed already includes speedMul from trivia effects)
+      // pixelsPerFrame = scrollSpeed * dt * 60
+      // metersPerFrame = pixelsPerFrame / 6 = scrollSpeed * dt * 10
+      const pixelsThisFrame = g.scrollSpeed * dt * 60;
+      const metersThisFrame = pixelsThisFrame / 6;
+      g.levelDist += metersThisFrame;
+      g.totalDist += metersThisFrame;
+      g.score += Math.floor(metersThisFrame);
 
       // Parallax
-      g.bgOff1 += g.scrollSpeed * 0.5 * dt * 60;
-      g.bgOff2 += g.scrollSpeed * 1.2 * dt * 60;
+      g.bgOff1 += pixelsThisFrame * 0.5;
+      g.bgOff2 += pixelsThisFrame * 1.2;
 
       // ── Check all questions done → spawn founder ──────
       const questionsPerLevel2 = [1, 2, 3, 4, 5];
@@ -1732,9 +1737,9 @@ export const GameCanvas = ({
           `[Dist] founderTotal=${g.founderTotalDist.toFixed(0)} levelDist=${g.levelDist.toFixed(0)} remain=${Math.round(g.founderTotalDist - g.levelDist)} spawned=${g.founderSpawned} fX=${g.founderX.toFixed(0)} pxDist=${pxd.toFixed(0)}`,
         );
       }
-      // Move founder left with scroll
+      // Move founder left with scroll (same pixel speed as everything else)
       if (g.founderSpawned) {
-        g.founderX -= g.scrollSpeed * dt * 60;
+        g.founderX -= pixelsThisFrame;
         // Level complete when player passes alongside founder (playerX >= founderX)
         if (playerX >= g.founderX && !g.founderPassed) {
           g.founderPassed = true;
@@ -1771,7 +1776,7 @@ export const GameCanvas = ({
         }
         // Move portals left with scroll
         for (const portal of g.portals) {
-          if (portal.active) portal.x -= g.scrollSpeed * dt * 60;
+          if (portal.active) portal.x -= pixelsThisFrame;
         }
         // Portal timeout: dismiss if off-screen left or time expired
         const portalsGone = g.portals.length > 0 && g.portals.every(p => p.x < -PORTAL_RADIUS * 2);
@@ -1855,7 +1860,7 @@ export const GameCanvas = ({
       const isInv = now < g.invulnUntil;
       for (let i = g.obstacles.length - 1; i >= 0; i--) {
         const o = g.obstacles[i];
-        o.x -= g.scrollSpeed * dt * 60;
+        o.x -= pixelsThisFrame;
         if (o.x + o.width < -20) {
           g.obstacles.splice(i, 1);
           continue;
@@ -1875,7 +1880,7 @@ export const GameCanvas = ({
       // ── Update coins ─────────────────────────────────
       for (let i = g.coins.length - 1; i >= 0; i--) {
         const c = g.coins[i];
-        c.x -= g.scrollSpeed * dt * 60;
+        c.x -= pixelsThisFrame;
         if (c.collected) {
           c.collectAnim -= dt * 20;
           if (c.collectAnim <= 0) g.coins.splice(i, 1);
