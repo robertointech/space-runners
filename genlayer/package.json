@@ -1,0 +1,13 @@
+{
+  "name": "@crypto-runner/genlayer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "genlayer deploy",
+    "network": "genlayer network"
+  },
+  "devDependencies": {
+    "genlayer-js": "^0.18.3"
+  }
+}

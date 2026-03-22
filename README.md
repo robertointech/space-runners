@@ -1,83 +1,138 @@
-# 🏗 Scaffold-ETH 2
+# CRYPTO RUNNER
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+**Endless runner with crypto trivia, onchain leaderboard, and AI-powered questions.**
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+Built for the **Aleph Hackathon (March 2026)** - targeting Avalanche + GenLayer bounties.
 
-> [!NOTE]
-> 🤖 Scaffold-ETH 2 is AI-ready! It has everything agents need to build on Ethereum. Check `.agents/`, `.claude/`, `.opencode` or `.cursor/` for more info.
+## How to Play
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+1. **Connect wallet** (top-right) to save scores onchain
+2. **Tap/Click** to start - hold to fly with jetpack, release to fall
+3. **Collect coins** (golden BTC tokens) for points
+4. **Avoid enemies** - bankeros (suit guys) and aliens (green)
+5. **Answer trivia** every 15 seconds - correct = immunity + speed boost
+6. **Survive** as long as you can - 5 lives, increasing difficulty
+7. **Save your score** onchain after game over
+8. **Check the leaderboard** to see top players
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## Gameplay Features
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+- **Jetpack physics** - tap to fly, gravity pulls you down
+- **Crypto trivia** - 30 questions, 6-second timer, streak bonuses (3x = 2x coins)
+- **AI-generated questions** via GenLayer Intelligent Contracts (with hardcoded fallback)
+- **5 lives** with invulnerability frames on hit
+- **Increasing difficulty** - speed ramps up over time
+- **Pixel art graphics** - retro sci-fi space station aesthetic, all canvas-drawn
 
-## Requirements
-
-Before you begin, you need to install the following tools:
-
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
-
-## Quickstart
-
-To get started with Scaffold-ETH 2, follow the steps below:
-
-1. Install dependencies if it was skipped in CLI:
+## Architecture
 
 ```
-cd my-dapp-example
++-------------------+     +----------------------+     +-------------------+
+|   Next.js App     |     |  Avalanche Fuji      |     |  GenLayer Bradbury|
+|   (Vercel)        |---->|  CryptoRunnerBoard    |     |  TriviaGenerator  |
+|                   |     |  (Leaderboard)        |     |  (AI Questions)   |
+|  /game            |     +----------------------+     +-------------------+
+|  /leaderboard     |            ^                           ^
+|  /api/genlayer-   |------------|---------------------------|
+|       trivia      |    submitScore()              gen_call()
++-------------------+    getLeaderboard()        (3s timeout + fallback)
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15, React, HTML5 Canvas, Tailwind CSS |
+| Wallet | RainbowKit + wagmi (Scaffold-ETH 2) |
+| Smart Contract | Solidity 0.8.30 (Hardhat) |
+| Blockchain | Avalanche Fuji Testnet (C-Chain, chainId 43113) |
+| AI Trivia | GenLayer Intelligent Contract (Python, Bradbury Testnet) |
+| Framework | Scaffold-ETH 2 |
+| Deploy | Vercel (frontend), Hardhat (contracts) |
+
+## Contract Addresses (Avalanche Fuji)
+
+| Contract | Address |
+|----------|---------|
+| YourContract | [`0xDbF22B27667FF1eb1a33A9bDC085351751EEB2f8`](https://testnet.snowtrace.io/address/0xDbF22B27667FF1eb1a33A9bDC085351751EEB2f8) |
+| CryptoRunnerLeaderboard | [`0x11E3366e838d84eb642a41d8B0976584d8829240`](https://testnet.snowtrace.io/address/0x11E3366e838d84eb642a41d8B0976584d8829240) |
+
+## GenLayer Integration
+
+The `TriviaGenerator` Intelligent Contract uses GenLayer's AI consensus to generate trivia questions. Multiple validators with different LLMs agree on each answer via Optimistic Democracy.
+
+- Contract: `genlayer/contracts/trivia_generator.py`
+- API route: `/api/genlayer-trivia` (3-second timeout, falls back to hardcoded questions)
+- AI questions display a purple "AI GENERATED" badge in-game
+
+## Quick Start
+
+```bash
+# Install dependencies
 yarn install
+
+# For local dev: change targetNetworks in scaffold.config.ts to [chains.hardhat]
+# Start local chain + deploy contracts
+yarn chain          # Terminal 1
+yarn deploy         # Terminal 2
+
+# Start frontend
+yarn start          # Terminal 3
+
+# Open http://localhost:3000/game
 ```
 
-2. Run a local network in the first terminal:
+## Deploy to Avalanche Fuji
 
-```
-yarn chain
-```
+```bash
+# Generate deployer account
+yarn generate
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/hardhat/hardhat.config.ts`.
+# Fund with Fuji AVAX from faucet: https://faucet.avax.network/
 
-3. On a second terminal, deploy the test contract:
-
-```
-yarn deploy
+# Deploy contracts
+yarn deploy --network avalancheFuji
 ```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+## Deploy Frontend to Vercel
 
-4. On a third terminal, start your NextJS app:
+```bash
+# Login to Vercel
+yarn vercel:login
+
+# Deploy
+yarn vercel --prod
+```
+
+## Bounties
+
+- **Avalanche** - Game runs on Avalanche Fuji, leaderboard contract, wallet integration
+- **GenLayer** - Intelligent Contract for AI-powered trivia with consensus verification
+
+## Project Structure
 
 ```
-yarn start
+crypto-runner/
+  packages/
+    hardhat/
+      contracts/
+        CryptoRunnerLeaderboard.sol    # Onchain leaderboard (top 10, player stats)
+      deploy/
+        01_deploy_leaderboard.ts       # Deploy script
+    nextjs/
+      app/
+        game/page.tsx                  # Game page (wallet + contract hooks)
+        leaderboard/page.tsx           # Leaderboard page
+        api/genlayer-trivia/route.ts   # GenLayer API bridge
+      components/game/
+        GameCanvas.tsx                 # Full game engine (~1400 lines)
+  genlayer/
+    contracts/
+      trivia_generator.py             # GenLayer Intelligent Contract
+    deploy/
+      deployScript.ts                 # Bradbury deployment script
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+## Credits
 
-Run smart contract test with `yarn hardhat:test`
-
-- Edit your smart contracts in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
-
-
-## Documentation
-
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
-
-To know more about its features, check out our [website](https://scaffoldeth.io).
-
-## Contributing to Scaffold-ETH 2
-
-We welcome contributions to Scaffold-ETH 2!
-
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+Built in 12 hours at the Aleph Hackathon, March 2026.

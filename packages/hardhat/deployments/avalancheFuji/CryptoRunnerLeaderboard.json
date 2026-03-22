@@ -1,0 +1,446 @@
+{
+  "address": "0x11E3366e838d84eb642a41d8B0976584d8829240",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "score",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "correctAnswers",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "NewScore",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "score",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rank",
+          "type": "uint256"
+        }
+      ],
+      "name": "NewTopScore",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_LEADERBOARD",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLeaderboard",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "player",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "score",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "correctAnswers",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct CryptoRunnerLeaderboard.ScoreEntry[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLeaderboardLength",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_player",
+          "type": "address"
+        }
+      ],
+      "name": "getPlayerStats",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "bestScore",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gamesPlayed",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalCorrectAnswers",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct CryptoRunnerLeaderboard.PlayerStats",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "hasPlayed",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "playerStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "bestScore",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gamesPlayed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalCorrectAnswers",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_score",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_correctAnswers",
+          "type": "uint256"
+        }
+      ],
+      "name": "submitScore",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "topScores",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "score",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "correctAnswers",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalPlayers",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x3bfab43deec3726590a224230a80739949936b724258d8390e2396c68f8f2351",
+  "receipt": {
+    "to": null,
+    "from": "0xfaDE3E5eC6E4E5519E92Ab0F47d8839b4F41dA7a",
+    "contractAddress": "0x11E3366e838d84eb642a41d8B0976584d8829240",
+    "transactionIndex": 0,
+    "gasUsed": "642155",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xc012baf5b49e10ea94e9b7150e3cf919ca50cad218f8c85bce97f6ef0038d022",
+    "transactionHash": "0x3bfab43deec3726590a224230a80739949936b724258d8390e2396c68f8f2351",
+    "logs": [],
+    "blockNumber": 53033891,
+    "cumulativeGasUsed": "642155",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "8515230edcacb0fc78311fb00ee603dd",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.30+commit.73712a01\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"player\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"score\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"correctAnswers\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"NewScore\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"player\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"score\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"rank\",\"type\":\"uint256\"}],\"name\":\"NewTopScore\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"MAX_LEADERBOARD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLeaderboard\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"player\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"score\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctAnswers\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"internalType\":\"struct CryptoRunnerLeaderboard.ScoreEntry[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLeaderboardLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_player\",\"type\":\"address\"}],\"name\":\"getPlayerStats\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"bestScore\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gamesPlayed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalCorrectAnswers\",\"type\":\"uint256\"}],\"internalType\":\"struct CryptoRunnerLeaderboard.PlayerStats\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"hasPlayed\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"playerStats\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"bestScore\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gamesPlayed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalCorrectAnswers\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_score\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_correctAnswers\",\"type\":\"uint256\"}],\"name\":\"submitScore\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"topScores\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"player\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"score\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctAnswers\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalPlayers\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/CryptoRunnerLeaderboard.sol\":\"CryptoRunnerLeaderboard\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/CryptoRunnerLeaderboard.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.20;\\n\\ncontract CryptoRunnerLeaderboard {\\n    struct ScoreEntry {\\n        address player;\\n        uint256 score;\\n        uint256 correctAnswers;\\n        uint256 timestamp;\\n    }\\n\\n    struct PlayerStats {\\n        uint256 bestScore;\\n        uint256 gamesPlayed;\\n        uint256 totalCorrectAnswers;\\n    }\\n\\n    ScoreEntry[] public topScores;\\n    uint256 public constant MAX_LEADERBOARD = 10;\\n    uint256 public totalPlayers;\\n\\n    mapping(address => PlayerStats) public playerStats;\\n    mapping(address => bool) public hasPlayed;\\n\\n    event NewScore(address indexed player, uint256 score, uint256 correctAnswers, uint256 timestamp);\\n    event NewTopScore(address indexed player, uint256 score, uint256 rank);\\n\\n    function submitScore(uint256 _score, uint256 _correctAnswers) external {\\n        require(_score > 0, \\\"Score must be > 0\\\");\\n\\n        PlayerStats storage stats = playerStats[msg.sender];\\n        if (!hasPlayed[msg.sender]) {\\n            hasPlayed[msg.sender] = true;\\n            totalPlayers++;\\n        }\\n        stats.gamesPlayed++;\\n        stats.totalCorrectAnswers += _correctAnswers;\\n        if (_score > stats.bestScore) {\\n            stats.bestScore = _score;\\n        }\\n\\n        emit NewScore(msg.sender, _score, _correctAnswers, block.timestamp);\\n\\n        if (topScores.length < MAX_LEADERBOARD) {\\n            topScores.push(ScoreEntry(msg.sender, _score, _correctAnswers, block.timestamp));\\n            _sortLeaderboard();\\n            emit NewTopScore(msg.sender, _score, _findRank(msg.sender, _score));\\n        } else if (_score > topScores[topScores.length - 1].score) {\\n            topScores[topScores.length - 1] = ScoreEntry(msg.sender, _score, _correctAnswers, block.timestamp);\\n            _sortLeaderboard();\\n            emit NewTopScore(msg.sender, _score, _findRank(msg.sender, _score));\\n        }\\n    }\\n\\n    function getLeaderboard() external view returns (ScoreEntry[] memory) {\\n        return topScores;\\n    }\\n\\n    function getLeaderboardLength() external view returns (uint256) {\\n        return topScores.length;\\n    }\\n\\n    function getPlayerStats(address _player) external view returns (PlayerStats memory) {\\n        return playerStats[_player];\\n    }\\n\\n    function _sortLeaderboard() internal {\\n        uint256 len = topScores.length;\\n        for (uint256 i = 1; i < len; i++) {\\n            ScoreEntry memory key = topScores[i];\\n            int256 j = int256(i) - 1;\\n            while (j >= 0 && topScores[uint256(j)].score < key.score) {\\n                topScores[uint256(j + 1)] = topScores[uint256(j)];\\n                j--;\\n            }\\n            topScores[uint256(j + 1)] = key;\\n        }\\n    }\\n\\n    function _findRank(address _player, uint256 _score) internal view returns (uint256) {\\n        for (uint256 i = 0; i < topScores.length; i++) {\\n            if (topScores[i].player == _player && topScores[i].score == _score) {\\n                return i + 1;\\n            }\\n        }\\n        return 0;\\n    }\\n}\\n\",\"keccak256\":\"0x1f01965b0a42e298acf382493db0e21fec6f3b8efa102f31b5cabe42e52f515a\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6080604052348015600f57600080fd5b50610aa78061001f6000396000f3fe608060405234801561001057600080fd5b50600436106100935760003560e01c80636d763a6e116100665780636d763a6e146101585780638358ba081461016d578063ab48660714610182578063cdafbbb61461018a578063f60cdcf6146101d357600080fd5b806302802a641461009857806332d0bbe3146100b35780634fd66eae146100e65780635112711a1461011b575b600080fd5b6100a0600a81565b6040519081526020015b60405180910390f35b6100d66100c13660046108c0565b60036020526000908152604090205460ff1681565b60405190151581526020016100aa565b6100f96100f43660046108c0565b6101dc565b60408051825181526020808401519082015291810151908201526060016100aa565b61012e6101293660046108f0565b610242565b604080516001600160a01b03909516855260208501939093529183015260608201526080016100aa565b610160610286565b6040516100aa9190610909565b61018061017b366004610978565b610310565b005b6000546100a0565b6101b86101983660046108c0565b600260208190526000918252604090912080546001820154919092015483565b604080519384526020840192909252908201526060016100aa565b6100a060015481565b61020060405180606001604052806000815260200160008152602001600081525090565b506001600160a01b0316600090815260026020818152604092839020835160608101855281548152600182015492810192909252909101549181019190915290565b6000818154811061025257600080fd5b600091825260209091206004909102018054600182015460028301546003909301546001600160a01b039092169350919084565b60606000805480602002602001604051908101604052809291908181526020016000905b82821015610307576000848152602090819020604080516080810182526004860290920180546001600160a01b031683526001808201548486015260028201549284019290925260030154606083015290835290920191016102aa565b50505050905090565b600082116103585760405162461bcd60e51b8152602060048201526011602482015270053636f7265206d757374206265203e203607c1b604482015260640160405180910390fd5b33600090815260026020908152604080832060039092529091205460ff166103a957336000908152600360205260408120805460ff191660019081179091558054916103a3836109b0565b91905055505b6001810180549060006103bb836109b0565b9190505550818160020160008282546103d491906109c9565b909155505080548311156103e6578281555b60408051848152602081018490524281830152905133917f19d48af01a7ea37fdeb0ab9b5a20213111891267523f3d5842d72c2232063545919081900360600190a2600054600a111561056e57604080516080810182523381526020810185815291810184815242606083019081526000805460018101825590805292517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563600490940293840180546001600160a01b0319166001600160a01b0390921691909117905592517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564830155517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e56582015590517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e56690910155610524610644565b337f4a4f4d793def15d1e37ddd5bcaaab31ba803346abde3f96742607745599226f184610551838261081f565b6040805192835260208301919091520160405180910390a2505050565b6000805461057e906001906109dc565b8154811061058e5761058e6109ef565b90600052602060002090600402016001015483111561063f576040805160808101825233815260208101859052908101839052426060820152600080546105d7906001906109dc565b815481106105e7576105e76109ef565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b0390921691909117815590820151600182015560408201516002820155606090910151600390910155610524610644565b505050565b60005460015b8181101561081b576000808281548110610666576106666109ef565b6000918252602080832060408051608081018252600490940290910180546001600160a01b03168452600180820154938501939093526002810154918401919091526003015460608301529092506106be9084610a05565b90505b600081121580156106f957508160200151600082815481106106e5576106e56109ef565b906000526020600020906004020160010154105b1561079c5760008181548110610711576107116109ef565b9060005260206000209060040201600082600161072e9190610a2c565b8154811061073e5761073e6109ef565b60009182526020909120825460049092020180546001600160a01b0319166001600160a01b0390921691909117815560018083015490820155600280830154908201556003918201549101558061079481610a54565b9150506106c1565b8160006107aa836001610a2c565b815481106107ba576107ba6109ef565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b03909216919091178155908201516001808301919091556040830151600283015560609092015160039091015592909201915061064a9050565b5050565b6000805b6000548110156108b457836001600160a01b03166000828154811061084a5761084a6109ef565b60009182526020909120600490910201546001600160a01b031614801561089457508260008281548110610880576108806109ef565b906000526020600020906004020160010154145b156108ac576108a48160016109c9565b9150506108ba565b600101610823565b50600090505b92915050565b6000602082840312156108d257600080fd5b81356001600160a01b03811681146108e957600080fd5b9392505050565b60006020828403121561090257600080fd5b5035919050565b602080825282518282018190526000918401906040840190835b8181101561096d57835180516001600160a01b0316845260208082015181860152604080830151908601526060918201519185019190915290930192608090920191600101610923565b509095945050505050565b6000806040838503121561098b57600080fd5b50508035926020909101359150565b634e487b7160e01b600052601160045260246000fd5b6000600182016109c2576109c261099a565b5060010190565b808201808211156108ba576108ba61099a565b818103818111156108ba576108ba61099a565b634e487b7160e01b600052603260045260246000fd5b8181036000831280158383131683831282161715610a2557610a2561099a565b5092915050565b8082018281126000831280158216821582161715610a4c57610a4c61099a565b505092915050565b6000600160ff1b8201610a6957610a6961099a565b50600019019056fea2646970667358221220715aa6d05ba3b7c122a95c82b4c51b6580d82275d5e971e1ece331563b9b32b964736f6c634300081e0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100935760003560e01c80636d763a6e116100665780636d763a6e146101585780638358ba081461016d578063ab48660714610182578063cdafbbb61461018a578063f60cdcf6146101d357600080fd5b806302802a641461009857806332d0bbe3146100b35780634fd66eae146100e65780635112711a1461011b575b600080fd5b6100a0600a81565b6040519081526020015b60405180910390f35b6100d66100c13660046108c0565b60036020526000908152604090205460ff1681565b60405190151581526020016100aa565b6100f96100f43660046108c0565b6101dc565b60408051825181526020808401519082015291810151908201526060016100aa565b61012e6101293660046108f0565b610242565b604080516001600160a01b03909516855260208501939093529183015260608201526080016100aa565b610160610286565b6040516100aa9190610909565b61018061017b366004610978565b610310565b005b6000546100a0565b6101b86101983660046108c0565b600260208190526000918252604090912080546001820154919092015483565b604080519384526020840192909252908201526060016100aa565b6100a060015481565b61020060405180606001604052806000815260200160008152602001600081525090565b506001600160a01b0316600090815260026020818152604092839020835160608101855281548152600182015492810192909252909101549181019190915290565b6000818154811061025257600080fd5b600091825260209091206004909102018054600182015460028301546003909301546001600160a01b039092169350919084565b60606000805480602002602001604051908101604052809291908181526020016000905b82821015610307576000848152602090819020604080516080810182526004860290920180546001600160a01b031683526001808201548486015260028201549284019290925260030154606083015290835290920191016102aa565b50505050905090565b600082116103585760405162461bcd60e51b8152602060048201526011602482015270053636f7265206d757374206265203e203607c1b604482015260640160405180910390fd5b33600090815260026020908152604080832060039092529091205460ff166103a957336000908152600360205260408120805460ff191660019081179091558054916103a3836109b0565b91905055505b6001810180549060006103bb836109b0565b9190505550818160020160008282546103d491906109c9565b909155505080548311156103e6578281555b60408051848152602081018490524281830152905133917f19d48af01a7ea37fdeb0ab9b5a20213111891267523f3d5842d72c2232063545919081900360600190a2600054600a111561056e57604080516080810182523381526020810185815291810184815242606083019081526000805460018101825590805292517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563600490940293840180546001600160a01b0319166001600160a01b0390921691909117905592517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564830155517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e56582015590517f290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e56690910155610524610644565b337f4a4f4d793def15d1e37ddd5bcaaab31ba803346abde3f96742607745599226f184610551838261081f565b6040805192835260208301919091520160405180910390a2505050565b6000805461057e906001906109dc565b8154811061058e5761058e6109ef565b90600052602060002090600402016001015483111561063f576040805160808101825233815260208101859052908101839052426060820152600080546105d7906001906109dc565b815481106105e7576105e76109ef565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b0390921691909117815590820151600182015560408201516002820155606090910151600390910155610524610644565b505050565b60005460015b8181101561081b576000808281548110610666576106666109ef565b6000918252602080832060408051608081018252600490940290910180546001600160a01b03168452600180820154938501939093526002810154918401919091526003015460608301529092506106be9084610a05565b90505b600081121580156106f957508160200151600082815481106106e5576106e56109ef565b906000526020600020906004020160010154105b1561079c5760008181548110610711576107116109ef565b9060005260206000209060040201600082600161072e9190610a2c565b8154811061073e5761073e6109ef565b60009182526020909120825460049092020180546001600160a01b0319166001600160a01b0390921691909117815560018083015490820155600280830154908201556003918201549101558061079481610a54565b9150506106c1565b8160006107aa836001610a2c565b815481106107ba576107ba6109ef565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b03909216919091178155908201516001808301919091556040830151600283015560609092015160039091015592909201915061064a9050565b5050565b6000805b6000548110156108b457836001600160a01b03166000828154811061084a5761084a6109ef565b60009182526020909120600490910201546001600160a01b031614801561089457508260008281548110610880576108806109ef565b906000526020600020906004020160010154145b156108ac576108a48160016109c9565b9150506108ba565b600101610823565b50600090505b92915050565b6000602082840312156108d257600080fd5b81356001600160a01b03811681146108e957600080fd5b9392505050565b60006020828403121561090257600080fd5b5035919050565b602080825282518282018190526000918401906040840190835b8181101561096d57835180516001600160a01b0316845260208082015181860152604080830151908601526060918201519185019190915290930192608090920191600101610923565b509095945050505050565b6000806040838503121561098b57600080fd5b50508035926020909101359150565b634e487b7160e01b600052601160045260246000fd5b6000600182016109c2576109c261099a565b5060010190565b808201808211156108ba576108ba61099a565b818103818111156108ba576108ba61099a565b634e487b7160e01b600052603260045260246000fd5b8181036000831280158383131683831282161715610a2557610a2561099a565b5092915050565b8082018281126000831280158216821582161715610a4c57610a4c61099a565b505092915050565b6000600160ff1b8201610a6957610a6961099a565b50600019019056fea2646970667358221220715aa6d05ba3b7c122a95c82b4c51b6580d82275d5e971e1ece331563b9b32b964736f6c634300081e0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 21,
+        "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+        "label": "topScores",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_array(t_struct(ScoreEntry)10_storage)dyn_storage"
+      },
+      {
+        "astId": 26,
+        "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+        "label": "totalPlayers",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 31,
+        "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+        "label": "playerStats",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_address,t_struct(PlayerStats)17_storage)"
+      },
+      {
+        "astId": 35,
+        "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+        "label": "hasPlayed",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_mapping(t_address,t_bool)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_struct(ScoreEntry)10_storage)dyn_storage": {
+        "base": "t_struct(ScoreEntry)10_storage",
+        "encoding": "dynamic_array",
+        "label": "struct CryptoRunnerLeaderboard.ScoreEntry[]",
+        "numberOfBytes": "32"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_mapping(t_address,t_struct(PlayerStats)17_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => struct CryptoRunnerLeaderboard.PlayerStats)",
+        "numberOfBytes": "32",
+        "value": "t_struct(PlayerStats)17_storage"
+      },
+      "t_struct(PlayerStats)17_storage": {
+        "encoding": "inplace",
+        "label": "struct CryptoRunnerLeaderboard.PlayerStats",
+        "members": [
+          {
+            "astId": 12,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "bestScore",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "gamesPlayed",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 16,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "totalCorrectAnswers",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "96"
+      },
+      "t_struct(ScoreEntry)10_storage": {
+        "encoding": "inplace",
+        "label": "struct CryptoRunnerLeaderboard.ScoreEntry",
+        "members": [
+          {
+            "astId": 3,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "player",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 5,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "score",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 7,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "correctAnswers",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 9,
+            "contract": "contracts/CryptoRunnerLeaderboard.sol:CryptoRunnerLeaderboard",
+            "label": "timestamp",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

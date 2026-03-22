@@ -1,0 +1,36 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/CryptoRunnerLeaderboard.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract CryptoRunnerLeaderboard {\n    struct ScoreEntry {\n        address player;\n        uint256 score;\n        uint256 correctAnswers;\n        uint256 timestamp;\n    }\n\n    struct PlayerStats {\n        uint256 bestScore;\n        uint256 gamesPlayed;\n        uint256 totalCorrectAnswers;\n    }\n\n    ScoreEntry[] public topScores;\n    uint256 public constant MAX_LEADERBOARD = 10;\n    uint256 public totalPlayers;\n\n    mapping(address => PlayerStats) public playerStats;\n    mapping(address => bool) public hasPlayed;\n\n    event NewScore(address indexed player, uint256 score, uint256 correctAnswers, uint256 timestamp);\n    event NewTopScore(address indexed player, uint256 score, uint256 rank);\n\n    function submitScore(uint256 _score, uint256 _correctAnswers) external {\n        require(_score > 0, \"Score must be > 0\");\n\n        PlayerStats storage stats = playerStats[msg.sender];\n        if (!hasPlayed[msg.sender]) {\n            hasPlayed[msg.sender] = true;\n            totalPlayers++;\n        }\n        stats.gamesPlayed++;\n        stats.totalCorrectAnswers += _correctAnswers;\n        if (_score > stats.bestScore) {\n            stats.bestScore = _score;\n        }\n\n        emit NewScore(msg.sender, _score, _correctAnswers, block.timestamp);\n\n        if (topScores.length < MAX_LEADERBOARD) {\n            topScores.push(ScoreEntry(msg.sender, _score, _correctAnswers, block.timestamp));\n            _sortLeaderboard();\n            emit NewTopScore(msg.sender, _score, _findRank(msg.sender, _score));\n        } else if (_score > topScores[topScores.length - 1].score) {\n            topScores[topScores.length - 1] = ScoreEntry(msg.sender, _score, _correctAnswers, block.timestamp);\n            _sortLeaderboard();\n            emit NewTopScore(msg.sender, _score, _findRank(msg.sender, _score));\n        }\n    }\n\n    function getLeaderboard() external view returns (ScoreEntry[] memory) {\n        return topScores;\n    }\n\n    function getLeaderboardLength() external view returns (uint256) {\n        return topScores.length;\n    }\n\n    function getPlayerStats(address _player) external view returns (PlayerStats memory) {\n        return playerStats[_player];\n    }\n\n    function _sortLeaderboard() internal {\n        uint256 len = topScores.length;\n        for (uint256 i = 1; i < len; i++) {\n            ScoreEntry memory key = topScores[i];\n            int256 j = int256(i) - 1;\n            while (j >= 0 && topScores[uint256(j)].score < key.score) {\n                topScores[uint256(j + 1)] = topScores[uint256(j)];\n                j--;\n            }\n            topScores[uint256(j + 1)] = key;\n        }\n    }\n\n    function _findRank(address _player, uint256 _score) internal view returns (uint256) {\n        for (uint256 i = 0; i < topScores.length; i++) {\n            if (topScores[i].player == _player && topScores[i].score == _score) {\n                return i + 1;\n            }\n        }\n        return 0;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "paris",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
