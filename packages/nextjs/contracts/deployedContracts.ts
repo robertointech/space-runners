@@ -698,6 +698,415 @@ const deployedContracts = {
       inheritedFunctions: {},
       deployedOnBlock: 53033891,
     },
+    SpaceRunnerAgents: {
+      address: "0x16fa0AB1Cb6Cffa62507f164015E0A621a2e62Bb",
+      abi: [
+        {
+          inputs: [],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "uint256",
+              name: "id",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "string",
+              name: "name",
+              type: "string",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "wallet",
+              type: "address",
+            },
+          ],
+          name: "AgentRegistered",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "uint256",
+              name: "id",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "races",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "wins",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "bestScore",
+              type: "uint256",
+            },
+          ],
+          name: "AgentStatsUpdated",
+          type: "event",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "address",
+              name: "player",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "uint256",
+              name: "playerScore",
+              type: "uint256",
+            },
+            {
+              indexed: false,
+              internalType: "uint256[4]",
+              name: "botScores",
+              type: "uint256[4]",
+            },
+          ],
+          name: "RaceCompleted",
+          type: "event",
+        },
+        {
+          inputs: [],
+          name: "AGENT_REGISTRY_TYPE",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "SERVICE_ENDPOINT",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "agentCount",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "agents",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "id",
+              type: "uint256",
+            },
+            {
+              internalType: "string",
+              name: "name",
+              type: "string",
+            },
+            {
+              internalType: "address",
+              name: "wallet",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "totalRaces",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "wins",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "bestScore",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "totalDistance",
+              type: "uint256",
+            },
+            {
+              internalType: "bool",
+              name: "registered",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_id",
+              type: "uint256",
+            },
+          ],
+          name: "getAgent",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "uint256",
+                  name: "id",
+                  type: "uint256",
+                },
+                {
+                  internalType: "string",
+                  name: "name",
+                  type: "string",
+                },
+                {
+                  internalType: "address",
+                  name: "wallet",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalRaces",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "wins",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "bestScore",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalDistance",
+                  type: "uint256",
+                },
+                {
+                  internalType: "bool",
+                  name: "registered",
+                  type: "bool",
+                },
+              ],
+              internalType: "struct SpaceRunnerAgents.Agent",
+              name: "",
+              type: "tuple",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_id",
+              type: "uint256",
+            },
+          ],
+          name: "getAgentURI",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getAllAgents",
+          outputs: [
+            {
+              components: [
+                {
+                  internalType: "uint256",
+                  name: "id",
+                  type: "uint256",
+                },
+                {
+                  internalType: "string",
+                  name: "name",
+                  type: "string",
+                },
+                {
+                  internalType: "address",
+                  name: "wallet",
+                  type: "address",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalRaces",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "wins",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "bestScore",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "totalDistance",
+                  type: "uint256",
+                },
+                {
+                  internalType: "bool",
+                  name: "registered",
+                  type: "bool",
+                },
+              ],
+              internalType: "struct SpaceRunnerAgents.Agent[]",
+              name: "",
+              type: "tuple[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "owner",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "string",
+              name: "_name",
+              type: "string",
+            },
+            {
+              internalType: "address",
+              name: "_wallet",
+              type: "address",
+            },
+          ],
+          name: "registerAgent",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_wallet0",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "_wallet1",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "_wallet2",
+              type: "address",
+            },
+            {
+              internalType: "address",
+              name: "_wallet3",
+              type: "address",
+            },
+          ],
+          name: "registerAllBots",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256[4]",
+              name: "_botScores",
+              type: "uint256[4]",
+            },
+            {
+              internalType: "uint256[4]",
+              name: "_botDistances",
+              type: "uint256[4]",
+            },
+            {
+              internalType: "uint256",
+              name: "_playerScore",
+              type: "uint256",
+            },
+          ],
+          name: "updateRaceResults",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ],
+      inheritedFunctions: {},
+      deployedOnBlock: 53051849,
+    },
     YourContract: {
       address: "0xDbF22B27667FF1eb1a33A9bDC085351751EEB2f8",
       abi: [

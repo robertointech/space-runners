@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 // GenLayer Bradbury testnet config
-const GENLAYER_RPC_URL = process.env.GENLAYER_RPC_URL || "https://studio.genlayer.com:8443/api";
-const TRIVIA_CONTRACT_ADDRESS = process.env.GENLAYER_TRIVIA_CONTRACT || "";
+const GENLAYER_RPC_URL = process.env.GENLAYER_RPC_URL || "https://rpc-bradbury.genlayer.com";
+const TRIVIA_CONTRACT_ADDRESS = process.env.GENLAYER_TRIVIA_CONTRACT || "0x110cDed8791cC9aF9D7642Acb7929CBA5576F16A";
 
 interface TriviaQuestion {
   question: string;

@@ -74,6 +74,7 @@ interface LevelConfig {
 }
 
 type GameState =
+  | "tap_to_enter"
   | "menu"
   | "level_intro"
   | "playing"
@@ -152,7 +153,7 @@ const QUESTIONS: TFQuestion[] = [
   { q: "The Ethereum merge switched to Proof of Stake", answer: true },
 ];
 
-// ── Audio Manager ──────────────────────────────────────
+// ── Audio Manager (all browser APIs guarded) ───────────
 class AudioManager {
   private sounds: Record<string, HTMLAudioElement | null> = {};
   private loaded = false;
@@ -161,44 +162,62 @@ class AudioManager {
   private fadeTimer: ReturnType<typeof setInterval> | null = null;
 
   load() {
-    if (this.loaded || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
+    if (this.loaded) return;
     this.loaded = true;
-    const files: Record<string, { src: string; loop: boolean; vol: number }> = {
-      intro: { src: "/audio/intro.mp3", loop: true, vol: 0.3 },
-      playing: { src: "/audio/playing.mp3", loop: true, vol: 0.3 },
-      sfx_coin: { src: "/audio/sfx_coin.mp3", loop: false, vol: 0.5 },
-      sfx_correct: { src: "/audio/sfx_correct.mp3", loop: false, vol: 0.5 },
-      sfx_wrong: { src: "/audio/sfx_wrong.mp3", loop: false, vol: 0.5 },
-      sfx_victory: { src: "/audio/sfx_victory.mp3", loop: false, vol: 0.5 },
-    };
-    for (const [key, cfg] of Object.entries(files)) {
-      try {
-        const a = new Audio(cfg.src);
-        a.preload = "auto";
-        a.loop = cfg.loop;
-        a.volume = cfg.vol;
-        this.sounds[key] = a;
-      } catch {
-        this.sounds[key] = null;
+    try {
+      const files: Record<string, { src: string; loop: boolean; vol: number }> = {
+        intro: { src: "/audio/intro.mp3", loop: true, vol: 0.3 },
+        playing: { src: "/audio/playing.mp3", loop: true, vol: 0.3 },
+        gameover: { src: "/audio/gameover.mp3", loop: false, vol: 0.5 },
+        winner: { src: "/audio/winner.mp3", loop: false, vol: 0.5 },
+        sfx_coin: { src: "/audio/money.mp3", loop: false, vol: 0.5 },
+        sfx_correct: { src: "/audio/money.mp3", loop: false, vol: 0.5 },
+        sfx_wrong: { src: "/audio/death.mp3", loop: false, vol: 0.5 },
+        sfx_victory: { src: "/audio/money.mp3", loop: false, vol: 0.7 },
+      };
+      for (const [key, cfg] of Object.entries(files)) {
+        try {
+          const a = new window.Audio(cfg.src);
+          a.preload = "auto";
+          a.loop = cfg.loop;
+          a.volume = cfg.vol;
+          this.sounds[key] = a;
+        } catch {
+          this.sounds[key] = null;
+        }
       }
+      console.log("[Audio] Loaded", Object.keys(this.sounds).join(", "));
+    } catch (e) {
+      console.warn("[Audio] Load failed:", e);
     }
   }
 
   userStart() {
+    if (typeof window === "undefined") return;
     if (this.started) return;
     this.started = true;
-    for (const s of Object.values(this.sounds)) {
-      if (s)
-        s.play()
-          .then(() => {
-            s.pause();
-            s.currentTime = 0;
-          })
-          .catch(() => {});
+    console.log("[Audio] User gesture received, unlocking audio");
+    try {
+      const AC =
+        window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AC) {
+        const ac = new AC();
+        const buf = ac.createBuffer(1, 1, 22050);
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        src.connect(ac.destination);
+        src.start(0);
+        ac.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("[Audio] Unlock failed:", e);
     }
   }
 
   playTrack(name: string) {
+    if (typeof window === "undefined") return;
+    console.log(`[Audio] playTrack: ${name} (current: ${this.currentTrack})`);
     if (name === this.currentTrack) return;
     if (this.fadeTimer) {
       clearInterval(this.fadeTimer);
@@ -207,27 +226,38 @@ class AudioManager {
     const prev = this.currentTrack ? this.sounds[this.currentTrack] : null;
     const next = this.sounds[name];
     if (prev) {
-      let vol = prev.volume;
-      this.fadeTimer = setInterval(() => {
-        vol -= 0.03;
-        if (vol <= 0) {
-          prev.pause();
-          prev.currentTime = 0;
-          prev.volume = 0.3;
-          if (this.fadeTimer) clearInterval(this.fadeTimer);
-          this.fadeTimer = null;
-        } else prev.volume = vol;
-      }, 30);
+      try {
+        let vol = prev.volume;
+        this.fadeTimer = setInterval(() => {
+          vol -= 0.03;
+          if (vol <= 0) {
+            try {
+              prev.pause();
+              prev.currentTime = 0;
+              prev.volume = 0.3;
+            } catch {}
+            if (this.fadeTimer) clearInterval(this.fadeTimer);
+            this.fadeTimer = null;
+          } else {
+            try {
+              prev.volume = vol;
+            } catch {}
+          }
+        }, 30);
+      } catch {}
     }
     this.currentTrack = name;
     if (next) {
-      next.currentTime = 0;
-      next.volume = 0.3;
-      next.play().catch(() => {});
+      try {
+        next.currentTime = 0;
+        next.volume = 0.3;
+        next.play().catch(() => {});
+      } catch {}
     }
   }
 
   stopAll() {
+    if (typeof window === "undefined") return;
     if (this.fadeTimer) {
       clearInterval(this.fadeTimer);
       this.fadeTimer = null;
@@ -245,6 +275,7 @@ class AudioManager {
   }
 
   play(name: string) {
+    if (typeof window === "undefined") return;
     const s = this.sounds[name];
     if (!s) return;
     try {
@@ -263,6 +294,8 @@ export interface GameOverData {
   maxStreak: number;
   level: number;
   totalTime: number;
+  botScores: [number, number, number, number];
+  botDistances: [number, number, number, number];
 }
 
 interface GameCanvasProps {
@@ -272,6 +305,7 @@ interface GameCanvasProps {
   saveStatus?: "idle" | "saving" | "saved" | "error";
   onSaveScore?: () => void;
   onViewLeaderboard?: () => void;
+  onConnectWallet?: () => void;
 }
 
 export const GameCanvas = ({
@@ -281,11 +315,29 @@ export const GameCanvas = ({
   saveStatus = "idle",
   onSaveScore,
   onViewLeaderboard,
+  onConnectWallet,
 }: GameCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const propsRef = useRef({ walletAddress, onGameOver, leaderboardScores, saveStatus, onSaveScore, onViewLeaderboard });
-  propsRef.current = { walletAddress, onGameOver, leaderboardScores, saveStatus, onSaveScore, onViewLeaderboard };
-  const audioRef = useRef(new AudioManager());
+  const propsRef = useRef({
+    walletAddress,
+    onGameOver,
+    leaderboardScores,
+    saveStatus,
+    onSaveScore,
+    onViewLeaderboard,
+    onConnectWallet,
+  });
+  propsRef.current = {
+    walletAddress,
+    onGameOver,
+    leaderboardScores,
+    saveStatus,
+    onSaveScore,
+    onViewLeaderboard,
+    onConnectWallet,
+  };
+  const audioRef = useRef<AudioManager | null>(null);
+  if (typeof window !== "undefined" && !audioRef.current) audioRef.current = new AudioManager();
   const gameOverBtns = useRef({
     save: { x: 0, y: 0, w: 0, h: 0 },
     leaderboard: { x: 0, y: 0, w: 0, h: 0 },
@@ -807,25 +859,25 @@ export const GameCanvas = ({
     ctx.font = "bold 20px monospace";
     ctx.textAlign = "left";
     ctx.fillText(`${g.score}`, 46, 34);
-    // Timer
+    // Timer (left-center, away from hearts)
     const ms = g.totalTime,
       mins = Math.floor(ms / 60000),
       secs = Math.floor((ms % 60000) / 1000),
       centi = Math.floor((ms % 1000) / 10);
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.fillStyle = "#ddeeff";
-    ctx.font = "bold 18px monospace";
+    ctx.font = "bold 16px monospace";
     ctx.fillText(
       `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(centi).padStart(2, "0")}`,
-      w / 2,
+      140,
       34,
     );
     // Race position
     const racePos = g.bots.filter(b => b.distance > g.levelDist).length + 1;
     const suffix = racePos === 1 ? "st" : racePos === 2 ? "nd" : racePos === 3 ? "rd" : "th";
     ctx.fillStyle = racePos === 1 ? "#fc0" : "#8899bb";
-    ctx.font = "bold 14px monospace";
-    ctx.fillText(`${racePos}${suffix} of 5`, w / 2, 52);
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(`${racePos}${suffix} of 5`, 140, 52);
     // Hearts
     for (let i = 0; i < MAX_LIVES; i++) {
       ctx.fillStyle = i < g.lives ? "#ff3366" : "#333355";
@@ -833,7 +885,21 @@ export const GameCanvas = ({
     }
     // Founder distance
     const lvl = LEVELS[g.currentLevel];
-    const remaining = Math.max(0, Math.floor(lvl.targetDist - g.levelDist));
+    let remaining: number;
+    if (g.founderSpawned) {
+      // Founder is spawned: show distance to where founder actually is
+      // founderX is screen position; convert back: founder is at founderSpawnDist in level distance
+      // But founderSpawnDist is when it was spawned, and it scrolls from there
+      // The player reaches the founder when playerX >= founderX, which happens ~when levelDist reaches founderSpawnDist
+      remaining = Math.max(0, Math.floor(g.founderSpawnDist - g.levelDist));
+    } else {
+      // Estimate: questions are spaced across targetDist, founder is 20m after last question
+      const qPerLvl = [1, 2, 3, 4, 5];
+      const nq = qPerLvl[g.currentLevel] || 3;
+      const lastQDist = (lvl.targetDist * nq) / (nq + 1); // approximate distance of last question
+      const estFounderDist = lastQDist + 20;
+      remaining = Math.max(0, Math.floor(estFounderDist - g.levelDist));
+    }
     ctx.textAlign = "right";
     ctx.fillStyle = remaining < 100 ? "#fc0" : "#8899bb";
     ctx.font = "bold 14px monospace";
@@ -952,48 +1018,80 @@ export const GameCanvas = ({
     ctx.globalAlpha = 1;
   };
 
+  // Level complete button hit areas
+  const lvlCompleteBtns = useRef({ home: { x: 0, y: 0, w: 0, h: 0 } });
+
   const drawLevelComplete = (ctx: CanvasRenderingContext2D, lvl: LevelConfig) => {
     const w = ctx.canvas.width,
       h = ctx.canvas.height;
     ctx.fillStyle = "rgba(0,10,0,0.9)";
     ctx.fillRect(0, 0, w, h);
-    glowText(ctx, "YOU WON!", w / 2, h * 0.25, "#33ff66", "#33ff66", "bold 48px monospace");
-    glowText(ctx, `You rescued ${lvl.founder}!`, w / 2, h * 0.25 + 50, "#fc0", "#fc0", "bold 22px monospace");
+    glowText(ctx, "YOU WON!", w / 2, h * 0.22, "#33ff66", "#33ff66", "bold 48px monospace");
+    glowText(ctx, `You rescued ${lvl.founder}!`, w / 2, h * 0.22 + 50, "#fc0", "#fc0", "bold 22px monospace");
     // Pixel art: player + freed founder
     const cx = w / 2;
-    drawPlayer(ctx, cx - 40, h * 0.5, false, Date.now(), false);
-    // Freed founder (simple character)
+    drawPlayer(ctx, cx - 40, h * 0.46, false, Date.now(), false);
     ctx.fillStyle = "#e8b888";
-    ctx.fillRect(cx + 20, h * 0.5 + 6, 14, 12);
+    ctx.fillRect(cx + 20, h * 0.46 + 6, 14, 12);
     ctx.fillStyle = "#fff";
-    ctx.fillRect(cx + 18, h * 0.5 + 20, 18, 16);
+    ctx.fillRect(cx + 18, h * 0.46 + 20, 18, 16);
     ctx.fillStyle = "#fc0";
     ctx.font = "bold 10px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(lvl.founder.split(" ")[0], cx + 27, h * 0.5 + 48);
+    ctx.fillText(lvl.founder.split(" ")[0], cx + 27, h * 0.46 + 48);
+    // TAP to continue
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
     ctx.font = "bold 20px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("TAP", w / 2, h * 0.82);
+    ctx.fillText("TAP to continue", w / 2, h * 0.72);
     ctx.globalAlpha = 1;
+    // HOME button
+    const btnW = 120,
+      btnH = 38,
+      bx = w / 2 - btnW / 2,
+      btnY = h * 0.78;
+    ctx.fillStyle = "#1a1a3a";
+    roundRect(ctx, bx, btnY, btnW, btnH, 8);
+    ctx.fill();
+    ctx.fillStyle = "#8899bb";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText("HOME", w / 2, btnY + btnH / 2 + 5);
+    lvlCompleteBtns.current.home = { x: bx, y: btnY, w: btnW, h: btnH };
   };
+
+  // Level transition button hit areas
+  const lvlTransBtns = useRef({ home: { x: 0, y: 0, w: 0, h: 0 } });
 
   const drawLevelTransition = (ctx: CanvasRenderingContext2D, nextLvl: LevelConfig) => {
     const w = ctx.canvas.width,
       h = ctx.canvas.height;
     ctx.fillStyle = "rgba(4,4,16,0.92)";
     ctx.fillRect(0, 0, w, h);
-    glowText(ctx, `Ready for Level ${nextLvl.level}?`, w / 2, h * 0.35, "#00d4ff", "#00d4ff", "bold 32px monospace");
+    glowText(ctx, `Ready for Level ${nextLvl.level}?`, w / 2, h * 0.3, "#00d4ff", "#00d4ff", "bold 32px monospace");
     ctx.fillStyle = "#fc0";
     ctx.font = "20px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(`Rescue ${nextLvl.founder}`, w / 2, h * 0.35 + 40);
+    ctx.fillText(`Rescue ${nextLvl.founder}`, w / 2, h * 0.3 + 40);
+    // TAP to continue
     ctx.globalAlpha = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
     ctx.fillStyle = "#fff";
     ctx.font = "bold 20px monospace";
-    ctx.fillText("TAP", w / 2, h * 0.7);
+    ctx.fillText("TAP to continue", w / 2, h * 0.62);
     ctx.globalAlpha = 1;
+    // HOME button
+    const btnW = 120,
+      btnH = 44,
+      bx = w / 2 - btnW / 2,
+      btnY = h * 0.7;
+    ctx.fillStyle = "#1a1a3a";
+    roundRect(ctx, bx, btnY, btnW, btnH, 8);
+    ctx.fill();
+    ctx.fillStyle = "#8899bb";
+    ctx.font = "bold 14px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("HOME", w / 2, btnY + btnH / 2 + 5);
+    lvlTransBtns.current.home = { x: bx, y: btnY, w: btnW, h: btnH };
   };
 
   const drawGameComplete = (ctx: CanvasRenderingContext2D, g: ReturnType<typeof mkGame>) => {
@@ -1134,7 +1232,7 @@ export const GameCanvas = ({
   // ── Game state factory ───────────────────────────────
   function mkGame(cw: number, ch: number, stars: { l1: Star[]; l2: Star[] }) {
     return {
-      state: "menu" as GameState,
+      state: "tap_to_enter" as GameState,
       playerY: ch / 2 - PLAYER_H / 2,
       velocityY: 0,
       jetpackOn: false,
@@ -1190,6 +1288,13 @@ export const GameCanvas = ({
       floats: [] as FloatingText[],
       flash: null as ScreenFlash | null,
       introTimer: 0,
+      // Founder spawning
+      allQDone: false,
+      founderSpawned: false,
+      founderSpawnDist: 0, // levelDist when founder was spawned
+      founderX: 0,
+      founderY: 0,
+      founderPassed: false,
     };
   }
 
@@ -1200,13 +1305,14 @@ export const GameCanvas = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     resizeCanvas();
-    audioRef.current.load();
+    audioRef.current?.load();
     const stars = initStars(canvas.width, canvas.height);
     const g = mkGame(canvas.width, canvas.height, stars);
 
     const resetLevel = (levelIdx: number) => {
       const lvl = LEVELS[levelIdx];
       g.currentLevel = levelIdx;
+      g.lives = MAX_LIVES; // Reset lives each level
       g.playerY = canvas.height / 2 - PLAYER_H / 2;
       g.velocityY = 0;
       g.jetpackOn = false;
@@ -1237,6 +1343,12 @@ export const GameCanvas = ({
       };
       g.lastTriviaTime = 0;
       g.triviaCount = 0; // reset per-level trivia count
+      g.allQDone = false;
+      g.founderSpawned = false;
+      g.founderSpawnDist = 0;
+      g.founderX = 0;
+      g.founderY = 0;
+      g.founderPassed = false;
       g.floats = [];
       g.flash = null;
       // Reset bots for this level
@@ -1284,6 +1396,18 @@ export const GameCanvas = ({
         maxStreak: g.maxStreak,
         level: g.currentLevel + 1,
         totalTime: g.totalTime,
+        botScores: [
+          Math.floor(g.bots[0]?.distance || 0),
+          Math.floor(g.bots[1]?.distance || 0),
+          Math.floor(g.bots[2]?.distance || 0),
+          Math.floor(g.bots[3]?.distance || 0),
+        ],
+        botDistances: [
+          Math.floor(g.bots[0]?.distance || 0),
+          Math.floor(g.bots[1]?.distance || 0),
+          Math.floor(g.bots[2]?.distance || 0),
+          Math.floor(g.bots[3]?.distance || 0),
+        ],
       });
     };
 
@@ -1295,10 +1419,29 @@ export const GameCanvas = ({
     const hit = (mx: number, my: number, b: { x: number; y: number; w: number; h: number }) =>
       mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h;
 
-    const audio = audioRef.current;
+    const audio = audioRef.current!;
+
+    // Hit areas for tap_to_enter buttons
+    const tapEnterBtns = { connect: { x: 0, y: 0, w: 0, h: 0 }, play: { x: 0, y: 0, w: 0, h: 0 } };
 
     const onDown = (e: MouseEvent | Touch, isTouch = false) => {
       audio.userStart(); // unlock audio on first tap
+      if (g.state === "tap_to_enter") {
+        const { mx, my } = getCP(e.clientX, e.clientY);
+        // Connect wallet button
+        if (hit(mx, my, tapEnterBtns.connect)) {
+          propsRef.current.onConnectWallet?.();
+          // Go to menu after triggering connect
+          g.state = "menu";
+          audio.playTrack("intro");
+          return;
+        }
+        // Play without wallet (tap anywhere else)
+        g.state = "menu";
+        audio.playTrack("intro");
+        console.log("[Audio] First tap -> playing intro.mp3");
+        return;
+      }
       if (g.state === "menu") {
         fullReset();
         g.state = "level_intro";
@@ -1314,10 +1457,19 @@ export const GameCanvas = ({
         return;
       }
       if (g.state === "level_complete") {
+        const { mx, my } = getCP(e.clientX, e.clientY);
+        if (hit(mx, my, lvlCompleteBtns.current.home)) {
+          fullReset();
+          g.state = "menu";
+          audio.stopAll();
+          audio.playTrack("intro");
+          return;
+        }
         if (g.currentLevel >= LEVELS.length - 1) {
           g.state = "game_complete";
           fireGameOver();
           audio.stopAll();
+          audio.play("winner");
         } else {
           g.state = "level_transition";
           audio.playTrack("intro");
@@ -1325,6 +1477,14 @@ export const GameCanvas = ({
         return;
       }
       if (g.state === "level_transition") {
+        const { mx, my } = getCP(e.clientX, e.clientY);
+        if (hit(mx, my, lvlTransBtns.current.home)) {
+          fullReset();
+          g.state = "menu";
+          audio.stopAll();
+          audio.playTrack("intro");
+          return;
+        }
         resetLevel(g.currentLevel + 1);
         g.state = "playing";
         g.lastFrameTime = performance.now();
@@ -1377,6 +1537,54 @@ export const GameCanvas = ({
       g.animFrameId = requestAnimationFrame(loop);
       const w = canvas.width,
         h = canvas.height;
+
+      // ── TAP TO ENTER / WALLET CONNECT splash ────────
+      if (g.state === "tap_to_enter") {
+        ctx.fillStyle = "#040410";
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = 0.03;
+        for (let sy = 0; sy < h; sy += 3) {
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, sy, w, 1);
+        }
+        ctx.globalAlpha = 1;
+        glowText(ctx, "SPACE RUNNERS", w / 2, h * 0.22, "#00d4ff", "#00d4ff", "bold 44px monospace");
+        // Subtitle
+        ctx.fillStyle = "#7788aa";
+        ctx.font = "15px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("Connect your wallet to save scores", w / 2, h * 0.35);
+        // CONNECT WALLET button
+        const cbW = 260,
+          cbH = 50,
+          cbX = w / 2 - cbW / 2,
+          cbY = h * 0.42;
+        ctx.fillStyle = "#0a4a6a";
+        roundRect(ctx, cbX, cbY, cbW, cbH, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#00d4ff";
+        ctx.lineWidth = 2;
+        roundRect(ctx, cbX, cbY, cbW, cbH, 10);
+        ctx.stroke();
+        ctx.fillStyle = "#00d4ff";
+        ctx.font = "bold 18px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("CONNECT WALLET", w / 2, cbY + cbH / 2 + 6);
+        tapEnterBtns.connect = { x: cbX, y: cbY, w: cbW, h: cbH };
+        // OR play without wallet
+        const pulse = 0.5 + Math.sin(Date.now() * 0.004) * 0.5;
+        ctx.globalAlpha = 0.6 + pulse * 0.4;
+        ctx.fillStyle = "#8899aa";
+        ctx.font = "16px monospace";
+        ctx.fillText("or TAP TO PLAY WITHOUT WALLET", w / 2, h * 0.65);
+        ctx.globalAlpha = 1;
+        // Footer
+        ctx.fillStyle = "#334455";
+        ctx.font = "12px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("Aleph Hackathon 2026  \u00b7  Avalanche + GenLayer", w / 2, h - 20);
+        return;
+      }
 
       if (g.state === "menu") {
         drawBg(ctx, 0, 0);
@@ -1462,12 +1670,31 @@ export const GameCanvas = ({
       g.bgOff1 += g.scrollSpeed * 0.5 * dt * 60;
       g.bgOff2 += g.scrollSpeed * 1.2 * dt * 60;
 
-      // ── Check level complete ─────────────────────────
-      if (g.levelDist >= lvl.targetDist) {
-        g.state = "level_complete";
-        audio.stopAll();
-        audio.play("sfx_victory");
-        return;
+      // ── Check all questions done → spawn founder ──────
+      const questionsPerLevel2 = [1, 2, 3, 4, 5];
+      const numQForLevel = questionsPerLevel2[g.currentLevel] || 3;
+      if (!g.allQDone && g.triviaCount >= numQForLevel && !g.trivia.active) {
+        g.allQDone = true;
+      }
+      // Spawn founder 20m after last question answered
+      if (g.allQDone && !g.founderSpawned) {
+        g.founderSpawned = true;
+        g.founderSpawnDist = g.levelDist + 20; // founder is 20m ahead
+        g.founderX = w + 60; // spawn off-screen right
+        g.founderY = h * 0.3 + Math.random() * h * 0.3;
+        console.log(`[Founder] Spawned at dist=${g.founderSpawnDist.toFixed(0)}, current=${g.levelDist.toFixed(0)}`);
+      }
+      // Move founder left with scroll
+      if (g.founderSpawned) {
+        g.founderX -= g.scrollSpeed * dt * 60;
+        // Level complete when player passes alongside founder (playerX >= founderX)
+        if (playerX >= g.founderX && !g.founderPassed) {
+          g.founderPassed = true;
+          g.state = "level_complete";
+          audio.play("sfx_victory");
+          audio.playTrack("intro"); // play intro music on victory screen
+          return;
+        }
       }
 
       // ── Trivia system (T/F portals) ──────────────────
@@ -1523,6 +1750,7 @@ export const GameCanvas = ({
                 g.streak++;
                 if (g.streak > g.maxStreak) g.maxStreak = g.streak;
                 g.score += CORRECT_SCORE;
+                if (g.lives < MAX_LIVES) g.lives++; // +1 life on correct
                 g.invulnUntil = Math.max(g.invulnUntil, now + CORRECT_IMMUNITY);
                 g.speedMul = CORRECT_SPEED_MUL;
                 g.speedMulUntil = now + CORRECT_IMMUNITY;
@@ -1547,6 +1775,7 @@ export const GameCanvas = ({
                 if (g.lives <= 0) {
                   g.state = "gameover";
                   audio.stopAll();
+                  audio.play("gameover");
                   fireGameOver();
                   return;
                 }
@@ -1591,6 +1820,7 @@ export const GameCanvas = ({
           if (g.lives <= 0) {
             g.state = "gameover";
             audio.stopAll();
+            audio.play("gameover");
             fireGameOver();
             return;
           }
@@ -1637,11 +1867,9 @@ export const GameCanvas = ({
       drawStars(ctx, g.starsL1, dt, g.scrollSpeed * 0.3);
       drawStars(ctx, g.starsL2, dt, g.scrollSpeed * 0.8);
 
-      // Founder cage (visible when < 100m away)
-      const remaining = lvl.targetDist - g.levelDist;
-      if (remaining < 100) {
-        const cageX = w - 60 + (remaining / 100) * (w * 0.3);
-        drawFounderCage(ctx, cageX, h * 0.35, lvl.founder, now);
+      // Founder cage (drawn at its scrolling position)
+      if (g.founderSpawned && !g.founderPassed && g.founderX > -60 && g.founderX < w + 60) {
+        drawFounderCage(ctx, g.founderX, g.founderY, lvl.founder, now);
       }
 
       // Bots (draw in background, smaller)

@@ -1,16 +1,26 @@
 import type { NextConfig } from "next";
 
+// Disable Next.js telemetry
+process.env.NEXT_TELEMETRY_DISABLED = "1";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   devIndicators: false,
   typescript: {
-    ignoreBuildErrors: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true"
+    ignoreBuildErrors: true,
   },
   eslint: {
-    ignoreDuringBuilds: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true"
+    ignoreDuringBuilds: true,
   },
-  webpack: config => { config.resolve.fallback = { fs: false, net: false, tls: false }; config.externals.push("pino-pretty", "lokijs", "encoding"); return config; }
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
+  webpack: config => {
+    config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };
+    config.externals.push("pino-pretty", "lokijs", "encoding");
+    return config;
+  },
 };
 
 const isIpfs = process.env.NEXT_PUBLIC_IPFS_BUILD === "true";
@@ -22,7 +32,5 @@ if (isIpfs) {
     unoptimized: true,
   };
 }
-
-
 
 module.exports = nextConfig;

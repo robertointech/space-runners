@@ -56,14 +56,42 @@ Built for the **Aleph Hackathon (March 2026)** - targeting Avalanche + GenLayer 
 |----------|---------|
 | YourContract | [`0xDbF22B27667FF1eb1a33A9bDC085351751EEB2f8`](https://testnet.snowtrace.io/address/0xDbF22B27667FF1eb1a33A9bDC085351751EEB2f8) |
 | CryptoRunnerLeaderboard | [`0x11E3366e838d84eb642a41d8B0976584d8829240`](https://testnet.snowtrace.io/address/0x11E3366e838d84eb642a41d8B0976584d8829240) |
+| SpaceRunnerAgents | [`0x16fa0AB1Cb6Cffa62507f164015E0A621a2e62Bb`](https://testnet.snowtrace.io/address/0x16fa0AB1Cb6Cffa62507f164015E0A621a2e62Bb) |
+
+## ERC-8004 Autonomous Agents (Avalanche Track)
+
+The 4 NPC bot racers (CryptoKid, HODLer, DeFiDegen, MoonBoy) are **onchain autonomous agents** inspired by the ERC-8004 standard:
+
+- **Onchain Identity:** Each bot has a unique ID, name, and wallet address registered on Avalanche Fuji
+- **Asset Ownership:** Agents own their stats (races, wins, best scores) as onchain data
+- **Game State Reaction:** After each race, `updateRaceResults()` records how each bot performed - their stats update based on actual game outcomes
+- **Service Endpoints:** Agents expose a service URI for querying their data
+- **Cross-chain Ready:** Contract follows ERC-8004 identity patterns (agent registry type, service endpoints)
+
+```solidity
+// SpaceRunnerAgents.sol
+struct Agent {
+    uint256 id;
+    string name;
+    address wallet;     // Agent's own wallet (can hold assets)
+    uint256 totalRaces;
+    uint256 wins;
+    uint256 bestScore;
+    uint256 totalDistance;
+}
+```
+
+When a player saves their score, the game also calls `updateRaceResults()` with each bot's performance data - making the NPCs "alive" onchain.
 
 ## GenLayer Integration
 
 The `TriviaGenerator` Intelligent Contract uses GenLayer's AI consensus to generate trivia questions. Multiple validators with different LLMs agree on each answer via Optimistic Democracy.
 
-- Contract: `genlayer/contracts/trivia_generator.py`
+- **Contract:** `genlayer/contracts/trivia_generator.py`
+- **Deployed on Bradbury:** [`0x110cDed8791cC9aF9D7642Acb7929CBA5576F16A`](https://explorer-bradbury.genlayer.com/)
+- **TX:** `0x2d6f582e8656f384310d8b32165d976dc566f01d6fafd35f9f231c9756ade27b`
+- **Consensus:** 5 validators voted AGREE (Optimistic Democracy + Equivalence Principle)
 - API route: `/api/genlayer-trivia` (3-second timeout, falls back to hardcoded questions)
-- AI questions display a purple "AI GENERATED" badge in-game
 
 ## Quick Start
 
