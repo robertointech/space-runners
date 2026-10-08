@@ -5,7 +5,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { useAccount, useSwitchChain } from "wagmi";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
+import { getTargetNetworks } from "~~/utils/scaffold-eth";
+
+const targetNetworks = getTargetNetworks();
+
+const NetworkSwitcher = () => {
+  const { chain } = useAccount();
+  const { switchChain } = useSwitchChain();
+
+  if (!chain || targetNetworks.length <= 1) return null;
+
+  const other = targetNetworks.find(n => n.id !== chain.id);
+  if (!other) return null;
+
+  return (
+    <button
+      onClick={() => switchChain?.({ chainId: other.id })}
+      className="px-2 py-1 rounded text-xs font-mono hidden sm:flex items-center gap-1"
+      style={{ background: "rgba(0,212,255,0.07)", color: "#00d4ff", border: "1px solid #1a3a5a" }}
+      title={`Switch to ${other.name}`}
+    >
+      <span style={{ color: "#8899bb" }}>⛓</span>
+      {chain.name}
+    </button>
+  );
+};
 
 export const menuLinks = [
   { label: "Play", href: "/" },
@@ -75,7 +101,10 @@ export const Header = () => {
           ))}
         </div>
       </div>
-      {hasPrivy ? <PrivyConnectButton /> : <RainbowKitCustomConnectButton />}
+      <div className="flex items-center gap-2">
+        <NetworkSwitcher />
+        {hasPrivy ? <PrivyConnectButton /> : <RainbowKitCustomConnectButton />}
+      </div>
     </div>
   );
 };

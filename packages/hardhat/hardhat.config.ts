@@ -130,6 +130,11 @@ const config: HardhatUserConfig = {
       accounts: [deployerPrivateKey],
       chainId: 43113,
     },
+    botchain: {
+      url: "https://rpc.botchain.ai",
+      accounts: [deployerPrivateKey],
+      chainId: 677,
+    },
   },
   // Configuration for harhdat-verify plugin
   etherscan: {

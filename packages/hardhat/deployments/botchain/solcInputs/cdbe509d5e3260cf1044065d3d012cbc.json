@@ -1,0 +1,36 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/SpaceRunnerAgents.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/**\n * @title SpaceRunnerAgents\n * @notice ERC-8004 inspired autonomous agent registry for Space Runners NPCs.\n * Each bot racer is an onchain agent with identity, stats, and the ability\n * to own assets (scores, victories). Agents react to game state: their stats\n * update after every race based on performance.\n *\n * Follows ERC-8004 concepts:\n * - Globally unique onchain identity per agent\n * - Service endpoints (game API)\n * - Reputation/stats that update based on interactions\n * - Agents can \"own\" achievements onchain\n */\ncontract SpaceRunnerAgents {\n    struct Agent {\n        uint256 id;\n        string name;\n        address wallet;\n        uint256 totalRaces;\n        uint256 wins;\n        uint256 bestScore;\n        uint256 totalDistance;\n        bool registered;\n    }\n\n    mapping(uint256 => Agent) public agents;\n    uint256 public agentCount;\n    address public owner;\n\n    // ERC-8004 style metadata\n    string public constant AGENT_REGISTRY_TYPE = \"eip155:43113:SpaceRunnerAgents\";\n    string public constant SERVICE_ENDPOINT = \"https://space-runners.vercel.app/api/agents\";\n\n    event AgentRegistered(uint256 indexed id, string name, address wallet);\n    event AgentStatsUpdated(uint256 indexed id, uint256 races, uint256 wins, uint256 bestScore);\n    event RaceCompleted(address indexed player, uint256 playerScore, uint256[4] botScores);\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Not owner\");\n        _;\n    }\n\n    /**\n     * @notice Register a new autonomous agent (bot racer)\n     * @param _name Agent display name\n     * @param _wallet Agent's onchain wallet address (can hold assets)\n     */\n    function registerAgent(string calldata _name, address _wallet) external onlyOwner returns (uint256) {\n        uint256 id = agentCount;\n        agents[id] = Agent({\n            id: id,\n            name: _name,\n            wallet: _wallet,\n            totalRaces: 0,\n            wins: 0,\n            bestScore: 0,\n            totalDistance: 0,\n            registered: true\n        });\n        agentCount++;\n        emit AgentRegistered(id, _name, _wallet);\n        return id;\n    }\n\n    /**\n     * @notice Batch register all 4 bot racers\n     */\n    function registerAllBots(\n        address _wallet0,\n        address _wallet1,\n        address _wallet2,\n        address _wallet3\n    ) external onlyOwner {\n        _registerBot(\"CryptoKid\", _wallet0);\n        _registerBot(\"HODLer\", _wallet1);\n        _registerBot(\"DeFiDegen\", _wallet2);\n        _registerBot(\"MoonBoy\", _wallet3);\n    }\n\n    function _registerBot(string memory _name, address _wallet) internal {\n        uint256 id = agentCount;\n        agents[id] = Agent({\n            id: id,\n            name: _name,\n            wallet: _wallet,\n            totalRaces: 0,\n            wins: 0,\n            bestScore: 0,\n            totalDistance: 0,\n            registered: true\n        });\n        agentCount++;\n        emit AgentRegistered(id, _name, _wallet);\n    }\n\n    /**\n     * @notice Update agent stats after a race. Called when player saves score.\n     * Agents \"react\" to game state — their performance is recorded onchain.\n     * @param _botScores Array of 4 bot scores from the race\n     * @param _botDistances Array of 4 bot distances from the race\n     * @param _playerScore Player's score (to determine if a bot won)\n     */\n    function updateRaceResults(\n        uint256[4] calldata _botScores,\n        uint256[4] calldata _botDistances,\n        uint256 _playerScore\n    ) external {\n        require(agentCount >= 4, \"Bots not registered\");\n\n        for (uint256 i = 0; i < 4; i++) {\n            Agent storage agent = agents[i];\n            agent.totalRaces++;\n            agent.totalDistance += _botDistances[i];\n\n            if (_botScores[i] > agent.bestScore) {\n                agent.bestScore = _botScores[i];\n            }\n\n            // Bot wins if its score beats the player\n            if (_botScores[i] > _playerScore) {\n                agent.wins++;\n            }\n\n            emit AgentStatsUpdated(i, agent.totalRaces, agent.wins, agent.bestScore);\n        }\n\n        emit RaceCompleted(msg.sender, _playerScore, _botScores);\n    }\n\n    /**\n     * @notice Get agent data (ERC-8004 style identity query)\n     */\n    function getAgent(uint256 _id) external view returns (Agent memory) {\n        require(agents[_id].registered, \"Agent not found\");\n        return agents[_id];\n    }\n\n    /**\n     * @notice Get all registered agents\n     */\n    function getAllAgents() external view returns (Agent[] memory) {\n        Agent[] memory all = new Agent[](agentCount);\n        for (uint256 i = 0; i < agentCount; i++) {\n            all[i] = agents[i];\n        }\n        return all;\n    }\n\n    /**\n     * @notice ERC-8004 style: get agent's service endpoint\n     */\n    function getAgentURI(uint256 _id) external view returns (string memory) {\n        require(agents[_id].registered, \"Agent not found\");\n        return SERVICE_ENDPOINT;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "paris",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

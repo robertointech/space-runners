@@ -26,6 +26,22 @@ async function main() {
     return;
   }
 
+  // Support plain-text network-specific keys (e.g. DEPLOYER_PRIVATE_KEY_BOTCHAIN)
+  const networkEnvKey = `DEPLOYER_PRIVATE_KEY_${networkName.toUpperCase()}`;
+  const plainKey = process.env[networkEnvKey];
+  if (plainKey) {
+    process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY = plainKey.startsWith("0x") ? plainKey : `0x${plainKey}`;
+    const hardhat = spawn("hardhat", ["deploy", ...process.argv.slice(2)], {
+      stdio: "inherit",
+      env: process.env,
+      shell: process.platform === "win32",
+    });
+    hardhat.on("exit", code => {
+      process.exit(code || 0);
+    });
+    return;
+  }
+
   const encryptedKey = process.env.DEPLOYER_PRIVATE_KEY_ENCRYPTED;
 
   if (!encryptedKey) {

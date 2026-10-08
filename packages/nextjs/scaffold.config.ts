@@ -19,6 +19,23 @@ export const avalancheFuji = defineChain({
   testnet: true,
 });
 
+export const botChain = defineChain({
+  id: 677,
+  name: "BOT Chain",
+  nativeCurrency: { name: "BOT", symbol: "BOT", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.botchain.ai"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "BOT Explorer",
+      url: "https://explorer.botchain.ai",
+    },
+  },
+});
+
 export type BaseConfig = {
   targetNetworks: readonly chains.Chain[];
   pollingInterval: number;
@@ -34,7 +51,7 @@ export const DEFAULT_ALCHEMY_API_KEY = "cR4WnXePioePZ5fFrnSiR";
 
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [avalancheFuji],
+  targetNetworks: [botChain, avalancheFuji],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))
   pollingInterval: 3000,
   // This is ours Alchemy's default API key.
