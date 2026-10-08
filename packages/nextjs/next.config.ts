@@ -23,9 +23,13 @@ const nextConfig: NextConfig = {
       "lokijs",
       "encoding",
       "@stripe/stripe-js",
-      "@x402/evm",
-      "@x402/core",
-      "@x402/svm",
+      // Match any @x402/* sub-path imports (e.g. @x402/evm/upto/client)
+      ({ request }: { request?: string }, callback: (err?: Error | null, result?: string) => void) => {
+        if (request && request.startsWith("@x402/")) {
+          return callback(null, `commonjs ${request}`);
+        }
+        callback();
+      },
     );
     return config;
   },
