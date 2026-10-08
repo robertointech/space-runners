@@ -4029,17 +4029,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@scaffold-ui/components@npm:^0.1.8":
-  version: 0.1.9
-  resolution: "@scaffold-ui/components@npm:0.1.9"
+"@scaffold-ui/components@npm:0.1.8":
+  version: 0.1.8
+  resolution: "@scaffold-ui/components@npm:0.1.8"
   peerDependencies:
-    "@scaffold-ui/hooks": 0.1.7
+    "@scaffold-ui/hooks": 0.1.6
     "@tanstack/react-query": ^5.59.15
     "@types/react": ^19.0.7
     react: ^19.2.3
     viem: ^2.23.0
     wagmi: ^2.14.11
-  checksum: a51e49ed9d14c43a4a755ba6d522180545db8a3271509f7281e3a54a6469a99e57b6a59afe891294eeff01a3adebb3b20f983866098ee68bfe7843af83fdf2ef
+  checksum: b06b2ce96a5cece41dcb8b9a3da46370577f8a1f4d210342bd4e9bb95190a886fc0c45dea08e041cdeedc762e0d3a50cef4ebd952eec4fd44ddcd7a6800d3078
   languageName: node
   linkType: hard
 
@@ -4228,7 +4228,7 @@ __metadata:
     "@privy-io/wagmi": ^4.0.3
     "@rainbow-me/rainbowkit": 2.2.9
     "@react-native-async-storage/async-storage": ~2.2.0
-    "@scaffold-ui/components": ^0.1.8
+    "@scaffold-ui/components": 0.1.8
     "@scaffold-ui/debug-contracts": ^0.1.7
     "@scaffold-ui/hooks": ^0.1.6
     "@tailwindcss/postcss": 4.0.15
