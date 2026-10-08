@@ -18,7 +18,15 @@ const nextConfig: NextConfig = {
   },
   webpack: config => {
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };
-    config.externals.push("pino-pretty", "lokijs", "encoding");
+    config.externals.push(
+      "pino-pretty",
+      "lokijs",
+      "encoding",
+      "@stripe/stripe-js",
+      "@x402/evm",
+      "@x402/core",
+      "@x402/svm",
+    );
     return config;
   },
 };
