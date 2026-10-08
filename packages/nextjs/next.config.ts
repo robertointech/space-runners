@@ -18,19 +18,7 @@ const nextConfig: NextConfig = {
   },
   webpack: config => {
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };
-    config.externals.push(
-      "pino-pretty",
-      "lokijs",
-      "encoding",
-      "@stripe/stripe-js",
-      // Match any @x402/* sub-path imports (e.g. @x402/evm/upto/client)
-      ({ request }: { request?: string }, callback: (err?: Error | null, result?: string) => void) => {
-        if (request && request.startsWith("@x402/")) {
-          return callback(null, `commonjs ${request}`);
-        }
-        callback();
-      },
-    );
+    config.externals.push("pino-pretty", "lokijs", "encoding", "@stripe/stripe-js");
     return config;
   },
 };
